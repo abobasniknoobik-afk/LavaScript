@@ -5,10 +5,9 @@ import sys
 
 class LavaScript:
     def __init__(self):
-        # Встроенные функции и переменные
         self.variables = {
             'True': True, 'False': False,
-            'lava_ver': '2.0.0',
+            'lava_ver': '2.1.0',
             'random': lambda r: random.randint(0, int(r)),
             'int': int, 'str': str, 'len': len
         }
@@ -21,51 +20,53 @@ class LavaScript:
         ptr = 0
         while ptr < len(lines):
             line = lines[ptr]
-            
             try:
-                # ASK: Ввод данных
-                if line.startswith("ask "):
-                    var_name, q = line[4:].split("<<")
-                    self.variables[var_name.strip()] = input(eval(q, {}, self.variables))
-
-                # TYPE: Печать (поддерживает цвета через символы)
-                elif line.startswith("type "):
+                # TYPE: Вывод
+                if line.startswith("type "):
                     print(eval(line[5:].strip(), {}, self.variables))
 
-                # MOLTEN: Переменные и Математика
+                # ASK: Ввод
+                elif line.startswith("ask "):
+                    name, q = line[4:].split("<<", 1)
+                    self.variables[name.strip()] = input(eval(q.strip(), {}, self.variables))
+
+                # FLOW (IF): Исправленный разбор
+                elif line.startswith("flow "):
+                    # Режем только по ПЕРВОМУ двоеточию
+                    content = line[5:].strip()
+                    cond, action = content.split(":", 1)
+                    if eval(cond.strip(), {}, self.variables):
+                        self.execute_one(action.strip())
+
+                # LOOP (FOR): Исправленный разбор
+                elif line.startswith("loop "):
+                    content = line[5:].strip()
+                    times, action = content.split(":", 1)
+                    for _ in range(int(eval(times.strip(), {}, self.variables))):
+                        self.execute_one(action.strip())
+
+                # MOLTEN: Переменные
                 elif "molten" in line and "<<" in line:
-                    name, expr = line.replace("molten", "").split("<<")
+                    name, expr = line.replace("molten", "").split("<<", 1)
                     self.variables[name.strip()] = eval(expr.strip(), {}, self.variables)
 
-                # FLOW (IF): Условие
-                elif line.startswith("flow "):
-                    cond, action = line[5:].split(":")
-                    if eval(cond, {}, self.variables):
-                        self.execute_one(action.strip())
-
-                # LOOP (FOR): Повторение (loop 5 : type "Hi")
-                elif line.startswith("loop "):
-                    times, action = line[5:].split(":")
-                    for _ in range(int(eval(times, {}, self.variables))):
-                        self.execute_one(action.strip())
-
-                # COOL: Удаление переменной
-                elif line.startswith("cool "):
-                    del self.variables[line[5:].strip()]
-
-                # WAIT: Пауза
+                # WAIT и COOL
                 elif line.startswith("wait "):
                     time.sleep(float(eval(line[5:], {}, self.variables)))
+                elif line.startswith("cool "):
+                    self.variables.pop(line[5:].strip(), None)
 
             except Exception as e:
-                print(f"🌋 Ошибка в строке {ptr+1}: {e}")
+                print(f"🌋 Ошибка в строке {ptr+1} ({line[:15]}...): {e}")
             ptr += 1
 
     def execute_one(self, action):
-        if action.startswith("type "): print(eval(action[5:], {}, self.variables))
-        elif "<<" in action: # Позволяет менять переменные внутри циклов/условий
-            n, e = action.split("<<")
-            self.variables[n.strip()] = eval(e.strip(), {}, self.variables)
+        # Внутренний обработчик для flow/loop
+        if action.startswith("type "):
+            print(eval(action[5:].strip(), {}, self.variables))
+        elif "<<" in action:
+            parts = action.split("<<", 1)
+            self.variables[parts[0].strip()] = eval(parts[1].strip(), {}, self.variables)
 
 if __name__ == "__main__":
     LavaScript().run()
