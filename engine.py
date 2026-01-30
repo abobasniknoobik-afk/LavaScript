@@ -1,43 +1,43 @@
 import sys, os, re, math, time, subprocess, random
 
-# Контейнер для департаментов (теперь максимально простой)
 class LSModule:
     def __init__(self, **funcs):
         self.__dict__.update(funcs)
 
 class LavaScript:
     def __init__(self):
-        # Регистрация всех команд под твоим стилем
         self.ctx = {
             "val": LSModule(
                 str=str, int=int, dec=float, logic=bool,
                 kind=lambda x: type(x).__name__, module=abs,
-                to_hex=hex, to_bin=bin, code=ord, char=chr
+                to_hex=hex, to_bin=bin, code=ord, char=chr,
+                all=all, any=any, ascii=ascii, complex=complex,
+                bytes=bytes, bytearray=bytearray, is_inst=isinstance,
+                is_sub=issubclass
             ),
             "math": LSModule(
                 root=math.sqrt, exp=pow, up=math.ceil, down=math.floor,
                 sin=math.sin, cos=math.cos, log=math.log, fix=round,
-                total=sum, peak=max, base=min
+                total=sum, peak=max, base=min, divmod=divmod
             ),
             "sys": LSModule(
                 size=len, step=range, link=enumerate, halt=sys.exit,
                 pause=time.sleep, path=os.getcwd, scan=os.listdir,
-                env=sys.platform, now=lambda: time.ctime()
+                env=sys.platform, now=lambda: time.ctime(), id=id,
+                rev=reversed, sort=sorted, iter=iter, next=next,
+                map=map, filter=filter, zip=zip
             ),
             "rand": LSModule(
                 num=random.randint, select=random.choice, chaos=random.shuffle
             ),
             "io": LSModule(
-                out=print, get=input, file=open, inject=eval, inspect=dir
+                out=print, get=input, file=open, inject=eval, 
+                run=exec, inspect=dir, vars=vars, loc=locals, glob=globals
             ),
-            "list": list, "dict": dict, "set": set
+            "list": list, "dict": dict, "set": set, "tuple": tuple
         }
         self.functions = {}
         self.includes = set()
-
-    def sync_git(self):
-        try: subprocess.run(["git", "pull"], capture_output=True)
-        except: pass
 
     def tokenize(self, code):
         code = re.sub(r'#.*', '', code)
@@ -70,12 +70,10 @@ class LavaScript:
     def safe_eval(self, expr_list, scope):
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
-            # Объединяем модули и переменные пользователя
             full_ctx = {**self.ctx, **scope}
-            res = eval(expr, {"__builtins__": None}, full_ctx)
-            return res if res is not None else "Empty"
+            return eval(expr, {"__builtins__": None}, full_ctx)
         except Exception as e:
-            return f"Error: {str(e)}"
+            return f"<Error: {e}>"
 
     def run(self, tree, scope):
         for node in tree:
@@ -97,16 +95,17 @@ class LavaScript:
             elif node["type"] == "block":
                 h = node["header"]
                 if h[0] == "while":
-                    l = 0
-                    while bool(self.safe_eval(h[1:], scope)) and l < 1000:
+                    while bool(self.safe_eval(h[1:], scope)):
                         self.run(node["body"], scope)
-                        l += 1
                 elif h[0] == "if":
                     if bool(self.safe_eval(h[1:], scope)):
                         self.run(node["body"], scope)
+                elif h[0] == "fn":
+                    name = h[1]
+                    s, e = h.index("(")+1, h.index(")")
+                    self.functions[name] = {"args": [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()], "body": node["body"]}
 
     def start(self, path):
-        self.sync_git()
         if os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
                 self.run(self.parse_structure(self.tokenize(f.read())), {})

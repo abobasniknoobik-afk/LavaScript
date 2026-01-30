@@ -1,13 +1,20 @@
-out "=== ТЕСТ СТАБИЛЬНОСТИ v14.2 ==="
+out "--- ТЕСТ АРСЕНАЛА v15.0 ---"
 
-# Обязательно используй () для вызова системных функций
-let path = sys.path()
-out "Путь: " + path
+# Математика
+let n = 144
+out "Корень из 144: " + val.str(math.root(n))
+out "Синус 0: " + val.str(math.sin(0))
 
-let num = rand.num(1, 10)
-out "Рандом: " + val.str(num)
+# Списки и Рандом
+let items = ["Lava", "Magma", "Titan"]
+out "Случайный выбор: " + rand.select(items)
 
-let files = sys.scan(path)
-out "Объектов: " + val.str(sys.size(files))
+# Системная пауза (на 1 секунду)
+out "Ждем секунду..."
+call sys.pause(1)
 
-out "=== ФИНИШ ==="
+# Проверка файлов
+let files = sys.scan(sys.path())
+out "Файлов в системе: " + val.str(sys.size(files))
+
+out "--- ВСЕ СИСТЕМЫ В НОРМЕ ---"
