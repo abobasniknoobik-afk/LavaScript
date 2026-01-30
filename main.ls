@@ -1,26 +1,36 @@
-# LavaScript Professional v4.0
-out "--- LAVA ENGINE 4.0 LOADED ---"
+# LavaScript Ultra 5.0 Test
+out "--- ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ LAVA ---"
 
-# 1. Объявление функции
-fn greet(name) {
-    out "Hello, " + name + "!"
+# 1. Работа с системными командами
+out "Список файлов в директории:"
+sh ls
+
+# 2. Создание функции
+fn check_status(val) {
+    if val > 50 {
+        out "Статус: КРИТИЧЕСКИЙ (" + str(val) + ")"
+    }
+    if val <= 50 {
+        out "Статус: НОРМА (" + str(val) + ")"
+    }
 }
 
-# 2. Переменные и арифметика
-let counter = 1
-let limit = 3
+# 3. Интерактив и Цикл
+ask name << "Введите имя оператора: "
+out "Приветствую, " + name
 
-# 3. Цикл While
-out "Starting loop..."
-while counter <= limit {
-    out "Iteration: " + str(counter)
-    call greet("Developer")
-    let counter = counter + 1
+let i = 1
+while i <= 3 {
+    let power = random(1, 100)
+    call check_status(power)
+    let i = i + 1
+    wait 0.5
 }
 
-# 4. Условия
-if counter > limit {
-    out "Process finished successfully."
-}
+# 4. Работа с интернетом и файлами
+out "Запрос данных из сети..."
+fetch "https://google.com" >> site_data
+out "Данные получены. Сохраняю лог..."
+write "log.txt" << "User " + name + " accessed system. Data: " + site_data
 
-out "System version: " + VERSION
+out "--- ПРОГРАММА ЗАВЕРШЕНА ---"
