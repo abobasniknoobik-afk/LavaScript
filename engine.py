@@ -1,4 +1,3 @@
-cat << 'EOF' > engine.py
 #!/usr/bin/env python3
 import sys, os, re, math, time, subprocess, random, urllib.request
 
@@ -8,28 +7,38 @@ class LSModule:
 
 class LavaScript:
     def __init__(self):
-        # Установлена версия v0.1_TEST
         self.version = "v0.1_TEST"
         
-        def web_get(url):
-            try:
-                with urllib.request.urlopen(url, timeout=5) as r:
-                    return r.read().decode('utf-8').strip()
-            except: return "Error: Connection Failed"
-            
-        def toast(msg): subprocess.run(["termux-toast", str(msg)])
-        def vibrate(ms): subprocess.run(["termux-vibrate", "-d", str(ms)])
+        # Модуль для работы с цветом и текстом
+        def color_text(code, text): return f"\033[{code}m{text}\033[0m"
         
         self.ctx = {
-            "val": LSModule(str=str, int=int, dec=float, logic=bool, kind=lambda x: type(x).__name__, module=abs, to_hex=hex, to_bin=bin, all=all, any=any),
-            "math": LSModule(root=math.sqrt, exp=pow, up=math.ceil, down=math.floor, sin=math.sin, cos=math.cos, log=math.log, fix=round, total=sum),
-            "sys": LSModule(size=len, step=range, link=enumerate, halt=sys.exit, pause=time.sleep, path=os.getcwd, scan=os.listdir, now=lambda: time.ctime(), env=sys.platform),
-            "net": LSModule(get=web_get),
-            "termux": LSModule(toast=toast, vibrate=vibrate),
-            "rand": LSModule(num=random.randint, select=random.choice, chaos=random.shuffle),
-            "io": LSModule(out=print, get=input, file=open, inject=eval, run=exec),
-            "list": list, "dict": dict, "set": set
+            "val": LSModule(
+                str=str, int=int, dec=float, logic=bool, 
+                kind=lambda x: type(x).__name__, 
+                type=lambda x: print(f"Type: {type(x).__name__}") # Твоя идея с type!
+            ),
+            "math": LSModule(root=math.sqrt, exp=pow, up=math.ceil, down=math.floor, total=sum),
+            "sys": LSModule(
+                size=len, path=os.getcwd, scan=os.listdir, 
+                now=lambda: time.ctime(), pause=time.sleep,
+                clear=lambda: os.system('clear'), # Очистка экрана
+                info=lambda: print(f"LavaScript v{self.version} on {sys.platform}")
+            ),
+            "gui": LSModule(
+                red=lambda t: color_text("31", t),
+                green=lambda t: color_text("32", t),
+                blue=lambda t: color_text("34", t),
+                gold=lambda t: color_text("33", t)
+            ),
+            "net": LSModule(get=lambda url: urllib.request.urlopen(url).read().decode('utf-8')),
+            "termux": LSModule(
+                toast=lambda m: subprocess.run(["termux-toast", str(m)]),
+                vibrate=lambda ms: subprocess.run(["termux-vibrate", "-d", str(ms)])
+            ),
+            "rand": LSModule(num=random.randint, select=random.choice)
         }
+        self.global_scope = {}
 
     def tokenize(self, code):
         code = re.sub(r'#.*', '', code)
@@ -70,7 +79,7 @@ class LavaScript:
         for node in tree:
             if node["type"] == "statement":
                 cmd = node["content"]
-                if not cmd: continue
+                if not cmd or len(cmd) == 0: continue
                 if cmd[0] == "out":
                     res = self.safe_eval(cmd[1:], scope)
                     print(f"\033[38;5;208m[LAVA]\033[0m {res}")
@@ -89,21 +98,22 @@ class LavaScript:
     def start(self, path):
         if os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
-                self.run(self.parse_structure(self.tokenize(f.read())), {})
+                self.run(self.parse_structure(self.tokenize(f.read())), self.global_scope)
+
+    def repl(self):
+        print(f"LavaScript {self.version} (Interactive REPL)")
+        while True:
+            try:
+                line = input("\033[38;5;226mLS>\033[0m ")
+                if line.lower() in ["exit", "quit"]: break
+                if not line.strip(): continue
+                self.run(self.parse_structure(self.tokenize(line)), self.global_scope)
+            except (KeyboardInterrupt, EOFError): break
+            except Exception as e: print(f"System Error: {e}")
 
 if __name__ == "__main__":
     engine = LavaScript()
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--version":
-            print(f"LavaScript {engine.version}")
-        else:
-            engine.start(sys.argv[1])
-EOF
-
-if __name__ == "__main__":
-    engine = LavaScript()
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "--version":
-            print(f"LavaScript {engine.version}")
-        else:
-            engine.start(sys.argv[1])
+        if sys.argv[1] == "--version": print(f"LavaScript {engine.version}")
+        else: engine.start(sys.argv[1])
+    else: engine.repl()
