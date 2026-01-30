@@ -2,37 +2,23 @@ import sys, os, re, math, time, subprocess, random
 
 class LavaScript:
     def __init__(self):
-        # Группируем всё по оригинальным категориям LS
         self.ls_builtins = {
-            # Модуль VAL (Типы и преобразования)
             "val.abs": abs, "val.bool": bool, "val.int": int, "val.str": str, 
             "val.float": float, "val.type": type, "val.ascii": ascii, "val.bin": bin,
             "val.hex": hex, "val.oct": oct, "val.chr": chr, "val.ord": ord,
             "val.bytes": bytes, "val.bytearray": bytearray, "val.complex": complex,
-            
-            # Модуль MATH (Математика)
             "math.max": max, "math.min": min, "math.sum": sum, "math.round": round,
             "math.pow": pow, "math.sqrt": math.sqrt, "math.ceil": math.ceil, 
             "math.floor": math.floor, "math.sin": math.sin, "math.cos": math.cos, 
             "math.log": math.log, "math.divmod": divmod,
-            
-            # Модуль SYS (Система и Итерация)
             "sys.size": len, "sys.platform": sys.platform, "sys.now": lambda: time.ctime(),
             "sys.sleep": time.sleep, "sys.exit": sys.exit, "sys.cwd": os.getcwd,
             "sys.ls": os.listdir, "sys.range": range, "sys.rev": reversed,
             "sys.sort": sorted, "sys.enum": enumerate, "sys.all": all, "sys.any": any,
-            "sys.id": id, "sys.hash": hash, "sys.help": help, "sys.call": callable,
-            
-            # Модуль RAND (Рандом)
-            "rand.int": random.randint, "rand.pick": random.choice, "rand.mix": random.shuffle,
-            
-            # Модуль IO (Ввод/Вывод и Динамика)
-            "io.open": open, "io.input": input, "io.eval": eval, "io.exec": exec,
-            "io.print": print, "io.dir": dir, "io.vars": vars, "io.globals": globals,
-            "io.locals": locals,
-            
-            # Структуры данных
-            "list": list, "dict": dict, "set": set, "tuple": tuple, "frozenset": frozenset
+            "sys.id": id, "sys.hash": hash, "rand.int": random.randint, 
+            "rand.pick": random.choice, "rand.mix": random.shuffle,
+            "io.print": print, "io.input": input, "io.eval": eval, "io.exec": exec,
+            "list": list, "dict": dict, "set": set, "tuple": tuple
         }
         self.functions = {}
         self.includes = set()
@@ -72,10 +58,11 @@ class LavaScript:
     def safe_eval(self, expr_list, scope):
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
-            # Магия объединения памяти
             ctx = {**self.ls_builtins, **scope}
             return eval(expr, {"__builtins__": None}, ctx)
-        except: return None
+        except Exception as e:
+            # Вместо None возвращаем описание ошибки, чтобы ты видел, где косяк
+            return f"<EvalError: {e}>"
 
     def run(self, tree, scope):
         for node in tree:
@@ -84,11 +71,15 @@ class LavaScript:
                 if not cmd: continue
                 
                 if cmd[0] == "out":
-                    print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
+                    res = self.safe_eval(cmd[1:], scope)
+                    # Фикс: Автоматическое приведение к строке для вывода
+                    print(f"\033[38;5;208m[LAVA]\033[0m {str(res)}")
                 
                 elif cmd[0] == "let":
                     if "=" in cmd:
-                        scope[cmd[1]] = self.safe_eval(cmd[cmd.index("=")+1:], scope)
+                        var_name = cmd[1]
+                        expr = cmd[cmd.index("=")+1:]
+                        scope[var_name] = self.safe_eval(expr, scope)
                 
                 elif cmd[0] == "include":
                     path = cmd[1].strip('"')
@@ -99,13 +90,18 @@ class LavaScript:
             elif node["type"] == "block":
                 h = node["header"]
                 if h[0] == "fn":
-                    name, s, e = h[1], h.index("(")+1, h.index(")")
-                    self.functions[name] = {"args": [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()], "body": node["body"]}
+                    name = h[1]
+                    s, e = h.index("(")+1, h.index(")")
+                    args = [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()]
+                    self.functions[name] = {"args": args, "body": node["body"]}
                 elif h[0] == "while":
-                    limit = 0
-                    while self.safe_eval(h[1:], scope) and limit < 2000:
+                    l = 0
+                    while self.safe_eval(h[1:], scope) == True and l < 1000:
                         self.run(node["body"], scope)
-                        limit += 1
+                        l += 1
+                elif h[0] == "if":
+                    if self.safe_eval(h[1:], scope):
+                        self.run(node["body"], scope)
 
     def start(self, path):
         self.sync_git()
