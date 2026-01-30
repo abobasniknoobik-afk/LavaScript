@@ -1,12 +1,25 @@
-# Подключаем внешние функции
-include "utils.ls"
+include "stdlib.ls"
 
-out "Запуск основной программы..."
-call info()
+out "--- LAVA SCRIPT PRO ACTIVATED ---"
 
-let data = [5, 10, 15]
-out "Размер массива: " + str(size(data))
+# Работаем в стиле JS
+let users = ["Admin", "Owner", "Guest"]
+let config = {"status": "active", "level": 5}
 
-if size(data) > 0 {
-    out "Массив не пуст, система стабильна."
+out "User list: " + str(users)
+
+# Вызов функции из другого файла
+call array_info(users)
+
+let i = 0
+while i < size(users) {
+    let current = users[i]
+    out "Checking user: " + current
+    if current == "Owner" {
+        out "Access Level: MAX"
+        call system_diag()
+    }
+    let i = i + 1
 }
+
+out "Program finished at: " + str(now())
