@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import sys, os, re, math, time, subprocess, random
 
 class LSModule:
@@ -6,6 +8,7 @@ class LSModule:
 
 class LavaScript:
     def __init__(self):
+        self.version = "15.0 Titanium"
         self.ctx = {
             "val": LSModule(
                 str=str, int=int, dec=float, logic=bool,
@@ -109,6 +112,15 @@ class LavaScript:
         if os.path.exists(path):
             with open(path, 'r', encoding='utf-8') as f:
                 self.run(self.parse_structure(self.tokenize(f.read())), {})
+        else:
+            print(f"\033[31m[LAVA ERROR]\033[0m File '{path}' not found.")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1: LavaScript().start(sys.argv[1])
+    engine = LavaScript()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--version":
+            print(f"LavaScript Language Engine v{engine.version}")
+        else:
+            engine.start(sys.argv[1])
+    else:
+        print("Usage: lava <filename.ls>")
