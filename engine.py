@@ -3,7 +3,7 @@ import sys, os, re, math, time, subprocess, json
 class LavaScript:
     def __init__(self):
         self.globals = {
-            "PI": math.pi, "VER": "9.0.0-CORE",
+            "PI": math.pi, "VER": "9.1.0-MAGMA",
             "size": len, "str": str, "int": int, "now": lambda: time.ctime(),
             "platform": sys.platform, "type": lambda x: type(x).__name__
         }
@@ -44,28 +44,11 @@ class LavaScript:
         return res
 
     def safe_eval(self, expr_list, scope):
-        expr = " ".join(expr_list)
-        # Очистка выражения для корректного Python-синтаксиса
-        expr = expr.replace("true", "True").replace("false", "False")
+        expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
+            # Магия: разрешаем доступ к глобальным переменным через scope
             return eval(expr, {"__builtins__": None}, {**self.globals, **scope})
-        except Exception as e:
-            return None
-
-    def register_all(self, tree, scope):
-        for node in tree:
-            if node["type"] == "block" and node["header"][0] == "fn":
-                h = node["header"]
-                name = h[1]
-                s, e = h.index("(")+1, h.index(")")
-                args = [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()]
-                self.functions[name] = {"args": args, "body": node["body"]}
-            elif node["type"] == "statement" and node["content"][0] == "include":
-                path = node["content"][1].strip('"')
-                if path not in self.includes and os.path.exists(path):
-                    self.includes.add(path)
-                    with open(path, 'r', encoding='utf-8') as f:
-                        self.register_all(self.parse_structure(self.tokenize(f.read())), scope)
+        except: return None
 
     def run(self, tree, scope=None):
         if scope is None: scope = {}
@@ -73,14 +56,23 @@ class LavaScript:
             if node["type"] == "statement":
                 cmd = node["content"]
                 if not cmd: continue
-                if cmd[0] == "out":
+                
+                if cmd[0] == "include":
+                    path = cmd[1].strip('"')
+                    if path not in self.includes and os.path.exists(path):
+                        self.includes.add(path)
+                        with open(path, 'r', encoding='utf-8') as f:
+                            self.run(self.parse_structure(self.tokenize(f.read())), scope)
+                
+                elif cmd[0] == "out":
                     val = self.safe_eval(cmd[1:], scope)
                     print(f"\033[92m[LAVA]\033[0m {val}")
+                
                 elif cmd[0] == "let":
                     if "=" in cmd:
                         idx = cmd.index("=")
-                        var_name = cmd[1]
-                        scope[var_name] = self.safe_eval(cmd[idx+1:], scope)
+                        scope[cmd[1]] = self.safe_eval(cmd[idx+1:], scope)
+                
                 elif cmd[0] == "call":
                     fname = cmd[1]
                     if fname in self.functions:
@@ -89,32 +81,31 @@ class LavaScript:
                             s, e = cmd.index("(")+1, cmd.index(")")
                             raw = " ".join(cmd[s:e])
                             vals = [self.safe_eval([v.strip()], scope) for v in raw.split(",") if v.strip()]
-                            # Запуск функции с обновленным scope
+                            # Запуск функции с передачей ВСЕГО scope (чтобы видеть глобальные переменные)
                             self.run(f["body"], {**scope, **dict(zip(f["args"], vals))})
                         except: pass
-            
+                
+                elif cmd[0] == "sh": os.system(" ".join(cmd[1:]).strip('"'))
+
             elif node["type"] == "block":
                 h = node["header"]
-                if h[0] == "if":
-                    condition = self.safe_eval(h[1:], scope)
-                    if condition: self.run(node["body"], scope)
+                if h[0] == "fn":
+                    name, s, e = h[1], h.index("(")+1, h.index(")")
+                    args = [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()]
+                    self.functions[name] = {"args": args, "body": node["body"]}
+                elif h[0] == "if":
+                    if self.safe_eval(h[1:], scope): self.run(node["body"], scope)
                 elif h[0] == "while":
-                    # Жесткая проверка условия
-                    limit = 0
-                    while self.safe_eval(h[1:], scope) and limit < 2000:
+                    l = 0
+                    while self.safe_eval(h[1:], scope) and l < 1000:
                         self.run(node["body"], scope)
-                        limit += 1
-                    if limit >= 2000:
-                        print("\033[91m[CRITICAL]\033[0m Infinite loop detected and stopped.")
+                        l += 1
 
     def start(self, path):
         self.sync_git()
-        if not os.path.exists(path): return
         with open(path, 'r', encoding='utf-8') as f:
             tree = self.parse_structure(self.tokenize(f.read()))
-            scope = {}
-            self.register_all(tree, scope)
-            self.run(tree, scope)
+            self.run(tree, {})
 
 if __name__ == "__main__":
     if len(sys.argv) > 1: LavaScript().start(sys.argv[1])
