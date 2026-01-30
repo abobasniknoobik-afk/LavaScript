@@ -1,88 +1,94 @@
 #!/usr/bin/env python3
 import sys, os, re, math, time, subprocess, random, urllib.request
+from types import SimpleNamespace
 
 class LavaScript:
     def __init__(self):
         self.version = "v0.1_TEST"
-        self.global_scope = {}
+        self.scope = {}
         
-        # Модули в виде словарей (самый стабильный вариант для eval)
-        self.modules = {
-            "val": {"str": str, "int": int, "dec": float, "kind": lambda x: type(x).__name__},
-            "math": {"root": math.sqrt, "exp": pow, "up": math.ceil, "down": math.floor, "total": sum},
-            "sys": {
-                "size": len, "path": os.getcwd, "scan": os.listdir, "now": lambda: time.ctime(),
-                "pause": time.sleep, "clear": lambda: os.system('clear'),
-                "info": lambda: print(f"\x1b[1;35mLavaScript v{self.version}\x1b[0m on {sys.platform}")
-            },
-            "gui": {
-                "red": lambda t: f"\x1b[31m{t}\x1b[0m",
-                "green": lambda t: f"\x1b[32m{t}\033[0m",
-                "blue": lambda t: f"\x1b[34m{t}\x1b[0m",
-                "gold": lambda t: f"\x1b[33m{t}\x1b[0m"
-            },
-            "net": {"get": lambda url: urllib.request.urlopen(url).read().decode('utf-8')},
-            "termux": {
-                "toast": lambda m: subprocess.run(["termux-toast", str(m)]),
-                "vibrate": lambda ms: subprocess.run(["termux-vibrate", "-d", str(ms)])
-            }
+        # Функции модулей
+        def get_net(url):
+            try:
+                with urllib.request.urlopen(url, timeout=5) as r:
+                    return r.read().decode('utf-8')
+            except: return "Net Error"
+
+        # Инициализация окружения (Модули)
+        self.env = {
+            "math": SimpleNamespace(root=math.sqrt, exp=pow, up=math.ceil, down=math.floor, total=sum),
+            "val": SimpleNamespace(str=str, int=int, dec=float, kind=lambda x: type(x).__name__),
+            "sys": SimpleNamespace(
+                path=os.getcwd, scan=os.listdir, now=lambda: time.ctime(),
+                pause=time.sleep, clear=lambda: os.system('clear'),
+                info=lambda: print(f"\033[1;35mLavaScript {self.version}\033[0m")
+            ),
+            "gui": SimpleNamespace(
+                red=lambda t: f"\033[31m{t}\033[0m",
+                green=lambda t: f"\033[32m{t}\033[0m",
+                blue=lambda t: f"\033[34m{t}\033[0m",
+                gold=lambda t: f"\033[33m{t}\033[0m"
+            ),
+            "net": SimpleNamespace(get=get_net),
+            "termux": SimpleNamespace(
+                toast=lambda m: subprocess.run(["termux-toast", str(m)]),
+                vibrate=lambda ms: subprocess.run(["termux-vibrate", "-d", str(ms)])
+            )
         }
 
-    def safe_eval(self, code, scope):
-        code = code.strip()
-        if not code: return ""
-        # Объединяем модули и переменные
-        env = {**self.modules, **scope}
-        try:
-            # Превращаем словари в объекты "на лету" через SimpleNamespace для поддержки точки
-            from types import SimpleNamespace
-            for key in self.modules:
-                if isinstance(self.modules[key], dict):
-                    env[key] = SimpleNamespace(**self.modules[key])
-            
-            return eval(code, {"__builtins__": None}, env)
-        except Exception as e:
-            return f"<Error: {e}>"
-
-    def run_line(self, line, scope):
+    def execute(self, line):
         line = line.strip()
         if not line or line.startswith("#"): return
 
-        if line.startswith("let "):
-            match = re.match(r'^let\s+(\w+)\s*=\s*(.*)$', line)
-            if match:
-                var_name, expr = match.groups()
-                scope[var_name] = self.safe_eval(expr, scope)
-            return
+        # Собираем контекст для исполнения
+        context = {**self.env, **self.scope}
 
-        if line.startswith("out "):
-            expr = line[4:].strip()
-            print(f"\x1b[38;5;208m[LAVA]\x1b[0m {self.safe_eval(expr, scope)}")
-            return
+        try:
+            # Логика LET
+            if line.startswith("let "):
+                m = re.match(r"let\s+(\w+)\s*=\s*(.*)", line)
+                if m:
+                    name, expr = m.groups()
+                    self.scope[name] = eval(expr, {"__builtins__": None}, context)
+                return
 
-        if line.startswith("type "):
-            expr = line[5:].strip()
-            val = self.safe_eval(expr, scope)
-            print(f"\x1b[38;5;111m[TYPE]\x1b[0m {type(val).__name__}")
-            return
+            # Логика OUT
+            if line.startswith("out "):
+                expr = line[4:].strip()
+                result = eval(expr, {"__builtins__": None}, context)
+                print(f"\033[38;5;208m[LAVA]\033[0m {result}")
+                return
 
-        self.safe_eval(line, scope)
+            # Логика TYPE
+            if line.startswith("type "):
+                expr = line[5:].strip()
+                result = eval(expr, {"__builtins__": None}, context)
+                print(f"\033[38;5;111m[TYPE]\033[0m {type(result).__name__}")
+                return
+
+            # Прямой вызов функций (sys.info() и т.д.)
+            eval(line, {"__builtins__": None}, context)
+
+        except Exception as e:
+            print(f"\033[31m[Error]\033[0m {e}")
 
     def repl(self):
-        print(f"\x1b[1;33mLavaScript {self.version}\x1b[0m (Interactive REPL)")
+        print(f"\033[1;33mLavaScript {self.version}\033[0m (Interactive REPL)")
         while True:
             try:
-                line = input("\x1b[38;5;226mLS>\x1b[0m ")
+                line = input("\033[38;5;226mLS>\033[0m ")
                 if line.lower() in ["exit", "quit"]: break
-                self.run_line(line, self.global_scope)
+                self.execute(line)
             except (KeyboardInterrupt, EOFError): break
-            except Exception as e: print(f"Runtime Error: {e}")
 
 if __name__ == "__main__":
     engine = LavaScript()
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--version": print(f"LavaScript {engine.version}")
+        if sys.argv[1] == "--version":
+            print(f"LavaScript {engine.version}")
         else:
-            with open(sys.argv[1], 'r') as f:
-                for line in f: engine.run_line(line, engine.global_scope)
-    else: engine.repl()
+            if os.path.exists(sys.argv[1]):
+                with open(sys.argv[1], 'r') as f:
+                    for l in f: engine.execute(l)
+    else:
+        engine.repl()
