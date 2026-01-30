@@ -3,10 +3,10 @@ import sys, os, re, math, time, random, json
 class LavaScript:
     def __init__(self):
         self.globals = {
-            "PI": math.pi, "VER": "8.5.0-ULTIMATE",
+            "PI": math.pi, "VER": "8.6.0-HYPERION",
             "random": lambda a, b: random.randint(int(a), int(b)),
             "size": len, "str": str, "int": int, "now": lambda: time.ctime(),
-            "platform": sys.platform
+            "platform": sys.platform, "type": lambda x: type(x).__name__
         }
         self.functions = {}
         self.includes = set()
@@ -46,30 +46,33 @@ class LavaScript:
             return eval(expr, {"__builtins__": None}, {**self.globals, **scope})
         except Exception as e: return f"<Error: {e}>"
 
-    # ПЕРВЫЙ ПРОХОД: Регистрация всех функций
-    def register_functions(self, tree):
+    def register_all(self, tree, scope):
+        """Регистрирует все функции во всех файлах рекурсивно"""
         for node in tree:
             if node["type"] == "block" and node["header"][0] == "fn":
                 h = node["header"]
                 name = h[1]
-                args = [a.strip() for a in " ".join(h[h.index("(")+1:h.index(")")]).split(",") if a.strip()]
-                self.functions[name] = {"args": args, "body": node["body"]}
+                try:
+                    s, e = h.index("(")+1, h.index(")")
+                    args = [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()]
+                    self.functions[name] = {"args": args, "body": node["body"]}
+                except: pass
             elif node["type"] == "statement" and node["content"][0] == "include":
                 path = node["content"][1].strip('"')
                 if path not in self.includes and os.path.exists(path):
                     self.includes.add(path)
                     with open(path, 'r') as f:
                         sub_tree = self.parse_structure(self.tokenize(f.read()))
-                        self.register_functions(sub_tree)
+                        self.register_all(sub_tree, scope)
 
-    # ВТОРОЙ ПРОХОД: Выполнение
     def run(self, tree, scope=None):
         if scope is None: scope = {}
         for node in tree:
             if node["type"] == "statement":
                 cmd = node["content"]
+                if not cmd: continue
                 if cmd[0] == "out":
-                    print(f"\033[92m[Lava]\033[0m {self.safe_eval(cmd[1:], scope)}")
+                    print(f"\033[92m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
                 elif cmd[0] == "let":
                     if "=" in cmd:
                         idx = cmd.index("=")
@@ -82,8 +85,10 @@ class LavaScript:
                             s, e = cmd.index("(")+1, cmd.index(")")
                             raw = " ".join(cmd[s:e])
                             vals = [self.safe_eval([v.strip()], scope) for v in raw.split(",") if v.strip()]
+                            # Запускаем в общем контексте, чтобы функции видели переменные
                             self.run(f["body"], {**scope, **dict(zip(f["args"], vals))})
-                        except: self.run(f["body"], scope)
+                        except Exception as e:
+                            print(f"Call Error: {e}")
             elif node["type"] == "block" and node["header"][0] != "fn":
                 h = node["header"]
                 if h[0] == "if":
@@ -92,12 +97,12 @@ class LavaScript:
                     while self.safe_eval(h[1:], scope): self.run(node["body"], scope)
 
     def start(self, path):
+        if not os.path.exists(path): return
         with open(path, 'r') as f:
-            code = f.read()
-            tokens = self.tokenize(code)
-            tree = self.parse_structure(tokens)
-            self.register_functions(tree) # Сначала учим все функции
-            self.run(tree) # Потом запускаем
+            tree = self.parse_structure(self.tokenize(f.read()))
+            scope = {}
+            self.register_all(tree, scope) # Сначала регистрируем всё из всех include
+            self.run(tree, scope)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
