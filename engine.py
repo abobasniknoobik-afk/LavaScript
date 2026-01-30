@@ -1,30 +1,38 @@
-import sys, os, re, math, time, subprocess
+import sys, os, re, math, time, subprocess, random
 
 class LavaScript:
     def __init__(self):
-        # Переименовываем стандартные функции в стиль LS
+        # Группируем всё по оригинальным категориям LS
         self.ls_builtins = {
-            "val.abs": abs,
-            "val.bool": bool,
-            "val.int": int,
-            "val.str": str,
-            "val.float": float,
-            "val.type": type,
-            "math.max": max,
-            "math.min": min,
-            "math.sum": sum,
-            "math.round": round,
-            "sys.size": len,
-            "sys.platform": sys.platform,
-            "sys.now": lambda: time.ctime(),
-            "sys.exec": exec,
-            "sys.dir": dir,
-            "list.create": list,
-            "list.sort": sorted,
-            "list.join": zip,
-            "io.open": open,
-            "io.input": input,
-            # Оставляем out как базовый вывод
+            # Модуль VAL (Типы и преобразования)
+            "val.abs": abs, "val.bool": bool, "val.int": int, "val.str": str, 
+            "val.float": float, "val.type": type, "val.ascii": ascii, "val.bin": bin,
+            "val.hex": hex, "val.oct": oct, "val.chr": chr, "val.ord": ord,
+            "val.bytes": bytes, "val.bytearray": bytearray, "val.complex": complex,
+            
+            # Модуль MATH (Математика)
+            "math.max": max, "math.min": min, "math.sum": sum, "math.round": round,
+            "math.pow": pow, "math.sqrt": math.sqrt, "math.ceil": math.ceil, 
+            "math.floor": math.floor, "math.sin": math.sin, "math.cos": math.cos, 
+            "math.log": math.log, "math.divmod": divmod,
+            
+            # Модуль SYS (Система и Итерация)
+            "sys.size": len, "sys.platform": sys.platform, "sys.now": lambda: time.ctime(),
+            "sys.sleep": time.sleep, "sys.exit": sys.exit, "sys.cwd": os.getcwd,
+            "sys.ls": os.listdir, "sys.range": range, "sys.rev": reversed,
+            "sys.sort": sorted, "sys.enum": enumerate, "sys.all": all, "sys.any": any,
+            "sys.id": id, "sys.hash": hash, "sys.help": help, "sys.call": callable,
+            
+            # Модуль RAND (Рандом)
+            "rand.int": random.randint, "rand.pick": random.choice, "rand.mix": random.shuffle,
+            
+            # Модуль IO (Ввод/Вывод и Динамика)
+            "io.open": open, "io.input": input, "io.eval": eval, "io.exec": exec,
+            "io.print": print, "io.dir": dir, "io.vars": vars, "io.globals": globals,
+            "io.locals": locals,
+            
+            # Структуры данных
+            "list": list, "dict": dict, "set": set, "tuple": tuple, "frozenset": frozenset
         }
         self.functions = {}
         self.includes = set()
@@ -64,8 +72,9 @@ class LavaScript:
     def safe_eval(self, expr_list, scope):
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
-            # Используем наши оригинальные префиксы
-            return eval(expr, {"__builtins__": None}, {**self.ls_builtins, **scope})
+            # Магия объединения памяти
+            ctx = {**self.ls_builtins, **scope}
+            return eval(expr, {"__builtins__": None}, ctx)
         except: return None
 
     def run(self, tree, scope):
@@ -73,35 +82,30 @@ class LavaScript:
             if node["type"] == "statement":
                 cmd = node["content"]
                 if not cmd: continue
+                
                 if cmd[0] == "out":
-                    print(f"\033[91m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
+                    print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
+                
                 elif cmd[0] == "let":
                     if "=" in cmd:
                         scope[cmd[1]] = self.safe_eval(cmd[cmd.index("=")+1:], scope)
-                elif cmd[0] == "call":
-                    f = self.functions.get(cmd[1])
-                    if f:
-                        s, e = cmd.index("(")+1, cmd.index(")")
-                        raw = " ".join(cmd[s:e])
-                        vals = [self.safe_eval([v.strip()], scope) for v in raw.split(",") if v.strip()]
-                        self.run(f["body"], {**scope, **dict(zip(f["args"], vals))})
+                
                 elif cmd[0] == "include":
                     path = cmd[1].strip('"')
                     if os.path.exists(path):
                         with open(path, 'r', encoding='utf-8') as f:
                             self.run(self.parse_structure(self.tokenize(f.read())), scope)
+
             elif node["type"] == "block":
                 h = node["header"]
                 if h[0] == "fn":
-                    s, e = h.index("(")+1, h.index(")")
-                    self.functions[h[1]] = {"args": [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()], "body": node["body"]}
-                elif h[0] == "if":
-                    if self.safe_eval(h[1:], scope): self.run(node["body"], scope)
+                    name, s, e = h[1], h.index("(")+1, h.index(")")
+                    self.functions[name] = {"args": [a.strip() for a in " ".join(h[s:e]).split(",") if a.strip()], "body": node["body"]}
                 elif h[0] == "while":
-                    l = 0
-                    while self.safe_eval(h[1:], scope) and l < 1000:
+                    limit = 0
+                    while self.safe_eval(h[1:], scope) and limit < 2000:
                         self.run(node["body"], scope)
-                        l += 1
+                        limit += 1
 
     def start(self, path):
         self.sync_git()

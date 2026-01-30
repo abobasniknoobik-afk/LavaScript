@@ -1,24 +1,23 @@
-out "=== LAVA SCRIPT ORIGINAL SYSTEM ==="
+out "=== LAVA SCRIPT v13.0 TITANIUM ==="
 
-# Используем свои методы
-let data = ["Core", "Magma", "Flow"]
-let count = sys.size(data)
+# 1. Работа с рандомом и математикой
+let secret = rand.int(1, 100)
+let root = math.sqrt(secret)
+out "Случайное число: " + val.str(secret)
+out "Его корень: " + val.str(root)
+
+# 2. Работа со списками в стиле LS
+let files = sys.ls(sys.cwd())
 let i = 0
 
-out "Версия системы: " + val.str(count)
+out "Файлов в папке: " + val.str(sys.size(files))
 
-while i < count {
-    let node = data[i]
-    out "Обработка узла: " + node
-    
-    # Свои математические функции
-    let power = math.max(10, 50)
-    
-    if i == 1 {
-        out "Мощность на узле: " + val.str(power)
-    }
-    
+# Цикл с использованием оригинальных методов
+while i < sys.size(files) {
+    let f = files[i]
+    out "Файл #" + val.str(i) + ": " + f
     let i = i + 1
 }
 
-out "Время завершения: " + sys.now()
+out "Текущее время: " + sys.now()
+out "=== СИСТЕМА СТАБИЛЬНА ==="
