@@ -1,16 +1,23 @@
-# Проверка интеллекта LavaScript
-type "--- ТЕСТ ИНТЕЛЛЕКТА LS ---"
+# LavaScript Mega Test
+type "--- ЗАПУСК ГЕНЕРАТОРА ЛАВЫ v2.0 ---"
 
-# Математика
-molten a << 10
-molten b << 20
-molten result << (a + b) * 5
-type "Результат (10 + 20) * 5 ="
-type result
+molten user << "Admin"
+type "Добро пожаловать, " + user
 
-# Работа со строками
-molten greeting << "Привет, "
-molten user << "Создатель"
-type greeting + user
+# Цикл: выведем числа от 1 до 5
+type "Запуск цикла прогрева:"
+loop 5 : type "Прогрев системы..."
 
-type "--- ТЕСТ ЗАВЕРШЕН ---"
+# Рандом и логика
+molten chance << random(100)
+type "Шанс извержения: " + str(chance) + "%"
+
+flow chance > 50 : type "ВНИМАНИЕ: Извержение начато!"
+flow chance <= 50 : type "Статус: Спокойствие."
+
+# Работа с временем
+type "Ожидание синхронизации..."
+wait 1.5
+type "Синхронизация завершена."
+
+type "--- КОНЕЦ ПРОГРАММЫ ---"
