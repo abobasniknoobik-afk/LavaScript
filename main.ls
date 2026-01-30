@@ -1,22 +1,13 @@
-# Подключаем наши библиотеки
 include "stdlib.ls"
 include "utils.ls"
 
-# Запуск системы
-call sys_header()
+out "--- LAVA SCRIPT PRO ACTIVATED ---"
 
-# Создаем "взрослые" данные (объекты и списки)
-let developer = "Admin"
-let projects = ["LavaScript", "Vesuvius", "Magma"]
+let user = "Admin"
+let items = [10, 20, 30]
 
-out "Добро пожаловать, " + developer
-call array_summary(projects)
+# Теперь вызовы будут работать 100%
+call array_summary(items)
+call math_max(50, 80)
 
-# Используем логику из stdlib
-call math_max(100, 250)
-
-# Системное действие из utils
-call create_log("Сессия запущена пользователем " + developer)
-
-out "Текущее время: " + now()
 out "--- ПРОГРАММА ЗАВЕРШЕНА ---"
