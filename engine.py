@@ -1,20 +1,28 @@
-import sys, os, re, math, time, random, json
+import sys, os, re, math, time, subprocess, json
 
 class LavaScript:
     def __init__(self):
         self.globals = {
-            "PI": math.pi, "VER": "8.6.0-HYPERION",
-            "random": lambda a, b: random.randint(int(a), int(b)),
+            "PI": math.pi, "VER": "8.7.0-OMNIPOTENT",
             "size": len, "str": str, "int": int, "now": lambda: time.ctime(),
             "platform": sys.platform, "type": lambda x: type(x).__name__
         }
         self.functions = {}
         self.includes = set()
 
+    def sync_git(self):
+        """Прямой вызов обновления перед запуском"""
+        try:
+            print("\033[93m[SYS]\033[0m Синхронизация с GitHub...")
+            # Пытаемся сделать pull. Если мы не в папке репозитория, он просто пропустит.
+            subprocess.run(["git", "pull"], capture_output=True)
+        except:
+            pass
+
     def tokenize(self, code):
         code = re.sub(r'#.*', '', code)
-        tokens = []
         pattern = r'(\{|\}|\[|\]|\(|\)|,|<<|>>|==|!=|>=|<=|[=+\-*/:]|[\w\.]+|"[^"]*")'
+        tokens = []
         for line in code.split('\n'):
             line = line.strip()
             if not line: continue
@@ -44,10 +52,10 @@ class LavaScript:
         expr = " ".join(expr_list)
         try:
             return eval(expr, {"__builtins__": None}, {**self.globals, **scope})
-        except Exception as e: return f"<Error: {e}>"
+        except: return "Error"
 
     def register_all(self, tree, scope):
-        """Регистрирует все функции во всех файлах рекурсивно"""
+        """Глубокая регистрация всех функций"""
         for node in tree:
             if node["type"] == "block" and node["header"][0] == "fn":
                 h = node["header"]
@@ -70,7 +78,6 @@ class LavaScript:
         for node in tree:
             if node["type"] == "statement":
                 cmd = node["content"]
-                if not cmd: continue
                 if cmd[0] == "out":
                     print(f"\033[92m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
                 elif cmd[0] == "let":
@@ -85,10 +92,9 @@ class LavaScript:
                             s, e = cmd.index("(")+1, cmd.index(")")
                             raw = " ".join(cmd[s:e])
                             vals = [self.safe_eval([v.strip()], scope) for v in raw.split(",") if v.strip()]
-                            # Запускаем в общем контексте, чтобы функции видели переменные
+                            # Запуск в текущем контексте
                             self.run(f["body"], {**scope, **dict(zip(f["args"], vals))})
-                        except Exception as e:
-                            print(f"Call Error: {e}")
+                        except: self.run(f["body"], scope)
             elif node["type"] == "block" and node["header"][0] != "fn":
                 h = node["header"]
                 if h[0] == "if":
@@ -97,11 +103,12 @@ class LavaScript:
                     while self.safe_eval(h[1:], scope): self.run(node["body"], scope)
 
     def start(self, path):
+        self.sync_git() # АВТО-ОБНОВЛЕНИЕ ЗДЕСЬ
         if not os.path.exists(path): return
         with open(path, 'r') as f:
             tree = self.parse_structure(self.tokenize(f.read()))
             scope = {}
-            self.register_all(tree, scope) # Сначала регистрируем всё из всех include
+            self.register_all(tree, scope)
             self.run(tree, scope)
 
 if __name__ == "__main__":
