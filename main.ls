@@ -1,21 +1,25 @@
-out "--- LAVA ENGINE 5.1 ACTIVATED ---"
+out "--- LAVA ENGINE 6.0: MAGMA EDITION ---"
 
-fn check_status(val) {
-    if val > 50 {
-        out "КРИТИЧЕСКИЙ УРОВЕНЬ: " + str(val)
-    }
-    if val <= 50 {
-        out "СТАБИЛЬНО: " + str(val)
-    }
+# 1. Работа с массивами
+let storage = [10, 20, 30]
+out "Начальный массив: " + str(storage)
+
+# 2. Сложная функция
+fn process(item, factor) {
+    let calc = item * factor
+    out "Обработка: " + str(item) + " -> " + str(calc)
 }
 
-let i = 1
-while i <= 3 {
-    # Теперь random передается как две цифры
-    let power = random(1, 100)
-    out "Запуск проверки #" + str(i)
-    call check_status(power)
+# 3. Цикл и условия
+let i = 0
+while i < size(storage) {
+    let current = storage[i]
+    if current > 15 {
+        call process(current, 2)
+    }
     let i = i + 1
 }
 
-out "--- ТЕСТ ЗАВЕРШЕН ---"
+# 4. Системный тест
+out "Версия ядра: " + VER
+out "Операция завершена успешно."
