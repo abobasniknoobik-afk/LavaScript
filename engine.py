@@ -2,126 +2,133 @@ import sys, os, re, math, time, requests, random
 
 class LavaScript:
     def __init__(self):
+        # Глобальное пространство имен
         self.globals = {
-            "PI": math.pi, "VERSION": "5.0.0-ULTRA",
-            "AUTHOR": "LS-Team", "platform": sys.platform
+            "PI": math.pi, "VERSION": "5.1.0-FIX",
+            "platform": sys.platform, "str": str, "int": int,
+            "random": lambda a, b: random.randint(int(a), int(b))
         }
         self.functions = {}
 
-    def evaluate(self, expr, scope):
-        try:
-            # Математика и логика
-            ctx = {**self.globals, **scope, "random": random.randint, "sin": math.sin}
-            return eval(expr, {"__builtins__": None}, ctx)
-        except Exception as e:
-            return f"<EvalError: {e}>"
-
     def tokenize(self, code):
-        code = re.sub(r'#.*', '', code) # Удаляем комментарии
+        # Очистка от комментариев и пустых строк
+        code = re.sub(r'#.*', '', code)
         tokens = []
-        # Умная разбивка с учетом блоков { }
         for line in code.split('\n'):
-            line = line.strip()
-            if not line: continue
-            if "{" in line:
-                tokens.append(line.split("{")[0].strip())
+            l = line.strip()
+            if not l: continue
+            # Умное разделение блоков { }
+            if "{" in l:
+                parts = l.split("{")
+                if parts[0].strip(): tokens.append(parts[0].strip())
                 tokens.append("{")
-            elif "}" in line:
+            elif "}" in l:
                 tokens.append("}")
             else:
-                tokens.append(line)
+                tokens.append(l)
         return tokens
 
-    def parse_blocks(self, tokens):
-        output = []
+    def parse_to_blocks(self, tokens):
+        res = []
         i = 0
         while i < len(tokens):
             if tokens[i] == "{":
                 block, balance, i = [], 1, i + 1
                 while i < len(tokens) and balance > 0:
                     if tokens[i] == "{": balance += 1
-                    if tokens[i] == "}": balance -= 1
+                    elif tokens[i] == "}": balance -= 1
                     if balance > 0: block.append(tokens[i])
                     i += 1
-                output.append(self.parse_blocks(block))
+                res.append(self.parse_to_blocks(block))
             else:
-                output.append(tokens[i])
+                res.append(tokens[i])
                 i += 1
-        return output
+        return res
 
-    def run(self, block, scope=None):
+    def eval_expr(self, expr, scope):
+        try:
+            # Объединяем глобалки, локалки и встроенные функции
+            context = {**self.globals, **scope}
+            return eval(expr, {"__builtins__": None}, context)
+        except Exception as e:
+            return f"EvalError: {e}"
+
+    def run(self, tree, scope=None):
         if scope is None: scope = {}
-        ptr = 0
-        while ptr < len(block):
-            line = block[ptr]
-            if isinstance(line, list): 
-                ptr += 1
-                continue
+        idx = 0
+        while idx < len(tree):
+            line = tree[idx]
+            if isinstance(line, list):
+                idx += 1; continue
             
             try:
-                # ВЫВОД
+                # ВЫВОД (OUT)
                 if line.startswith("out "):
-                    print(f"\033[96m[LS]\033[0m {self.evaluate(line[4:].strip(), scope)}")
+                    print(f"\033[95m[Lava]\033[0m {self.eval_expr(line[4:].strip(), scope)}")
 
-                # ПЕРЕМЕННЫЕ
+                # ПЕРЕМЕННЫЕ (LET)
                 elif line.startswith("let "):
                     name, val = line[4:].split("=", 1)
-                    scope[name.strip()] = self.evaluate(val.strip(), scope)
+                    scope[name.strip()] = self.eval_expr(val.strip(), scope)
 
-                # ФУНКЦИИ
+                # ОПРЕДЕЛЕНИЕ ФУНКЦИИ (FN)
                 elif line.startswith("fn "):
-                    match = re.match(r"fn (\w+)\((.*)\)", line)
-                    if match:
-                        name, args = match.groups()
-                        self.functions[name] = {"args": [a.strip() for a in args.split(",")], "body": block[ptr+1]}
-                    ptr += 2; continue
+                    m = re.match(r"fn (\w+)\((.*)\)", line)
+                    if m:
+                        fname, args = m.groups()
+                        self.functions[fname] = {
+                            "args": [a.strip() for a in args.split(",") if a.strip()],
+                            "body": tree[idx+1]
+                        }
+                    idx += 2; continue
 
-                # ВЫЗОВ ФУНКЦИИ
+                # ВЫЗОВ ФУНКЦИИ (CALL)
                 elif line.startswith("call "):
-                    match = re.match(r"call (\w+)\((.*)\)", line)
-                    if match:
-                        fname, val_expr = match.groups()
+                    m = re.match(r"call (\w+)\((.*)\)", line)
+                    if m:
+                        fname, params = m.groups()
                         if fname in self.functions:
                             f = self.functions[fname]
-                            args_vals = [self.evaluate(v.strip(), scope) for v in val_expr.split(",")]
-                            f_scope = dict(zip(f["args"], args_vals))
+                            # Вычисляем параметры в текущем scope
+                            p_vals = [self.eval_expr(p.strip(), scope) for p in params.split(",") if p.strip()]
+                            # Создаем локальный scope для функции
+                            f_scope = dict(zip(f["args"], p_vals))
                             self.run(f["body"], f_scope)
 
-                # УСЛОВИЯ И ЦИКЛЫ
+                # УСЛОВИЕ (IF)
                 elif line.startswith("if "):
-                    if self.evaluate(line[3:].strip(), scope): self.run(block[ptr+1], scope)
-                    ptr += 2; continue
-                elif line.startswith("while "):
-                    while self.evaluate(line[6:].strip(), scope): self.run(block[ptr+1], scope)
-                    ptr += 2; continue
+                    cond = line[3:].strip()
+                    if self.eval_expr(cond, scope):
+                        self.run(tree[idx+1], scope)
+                    idx += 2; continue
 
-                # СИСТЕМНЫЕ ФУНКЦИИ (РАБОТА С ФАЙЛАМИ И ТЕРМИНАЛОМ)
-                elif line.startswith("write "): # write "file.txt" << "content"
-                    path, data = line[6:].split("<<")
-                    with open(self.evaluate(path, scope), "w") as f: f.write(str(self.evaluate(data, scope)))
+                # ЦИКЛ (WHILE)
+                elif line.startswith("while "):
+                    cond = line[6:].strip()
+                    body = tree[idx+1]
+                    while self.eval_expr(cond, scope):
+                        self.run(body, scope)
+                    idx += 2; continue
+
+                # СИСТЕМНЫЕ
+                elif line.startswith("ask "):
+                    v, q = line[4:].split("<<")
+                    scope[v.strip()] = input(self.eval_expr(q, scope))
                 elif line.startswith("sh "):
                     os.system(line[3:].strip())
                 elif line.startswith("wait "):
-                    time.sleep(float(self.evaluate(line[5:], scope)))
-                elif line.startswith("fetch "): # fetch url >> var
-                    url, var = line[6:].split(">>")
-                    res = requests.get(self.evaluate(url, scope))
-                    scope[var.strip()] = res.text[:100] # Берем первые 100 символов
-
-                # ВВОД
-                elif line.startswith("ask "):
-                    var, q = line[4:].split("<<")
-                    scope[var.strip()] = input(self.evaluate(q, scope))
+                    time.sleep(float(self.eval_expr(line[5:], scope)))
 
             except Exception as e:
-                print(f"\033[91m[Error @ line {ptr}]: {e}\033[0m")
-            ptr += 1
+                print(f"🌋 Runtime Error at '{line}': {e}")
+            idx += 1
 
-    def start(self, file):
-        with open(file, 'r') as f:
+    def execute(self, file_path):
+        with open(file_path, 'r') as f:
             tokens = self.tokenize(f.read())
-        self.run(self.parse_blocks(tokens))
+            tree = self.parse_to_blocks(tokens)
+            self.run(tree)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1: LavaScript().start(sys.argv[1])
-    else: print("LavaScript Ultra 5.0 - No file provided.")
+    if len(sys.argv) > 1:
+        LavaScript().execute(sys.argv[1])
