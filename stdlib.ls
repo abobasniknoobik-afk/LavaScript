@@ -1,18 +1,26 @@
-# LavaScript Standard Library (v1.0)
-# Присваиваем авторство: Created by LS Team 2026
+# ==========================================
+# LavaScript Standard Library (stdlib.ls)
+# ==========================================
 
-fn math_power(base, exp) {
-    let res = base ** exp
-    out "Power Result: " + str(res)
+# Работа со строками
+fn capitalize(text) {
+    let result = str(text).upper()
+    out "Преобразование: " + result
 }
 
-fn array_info(arr) {
-    out "Array size: " + str(size(arr))
-    out "First element: " + str(arr[0])
+# Математические операции в стиле JS
+fn math_max(a, b) {
+    if a > b {
+        out "Максимум: " + str(a)
+    }
+    if b >= a {
+        out "Максимум: " + str(b)
+    }
 }
 
-fn system_diag() {
-    out "System diagnostics..."
-    out "Engine Version: " + VER
-    out "Current OS: " + platform
+# Работа с массивами
+fn array_summary(arr) {
+    let s = size(arr)
+    out "Элементов в массиве: " + str(s)
+    out "Тип структуры: " + type(arr)
 }

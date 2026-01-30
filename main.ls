@@ -1,25 +1,22 @@
+# Подключаем наши библиотеки
 include "stdlib.ls"
+include "utils.ls"
 
-out "--- LAVA SCRIPT PRO ACTIVATED ---"
+# Запуск системы
+call sys_header()
 
-# Работаем в стиле JS
-let users = ["Admin", "Owner", "Guest"]
-let config = {"status": "active", "level": 5}
+# Создаем "взрослые" данные (объекты и списки)
+let developer = "Admin"
+let projects = ["LavaScript", "Vesuvius", "Magma"]
 
-out "User list: " + str(users)
+out "Добро пожаловать, " + developer
+call array_summary(projects)
 
-# Вызов функции из другого файла
-call array_info(users)
+# Используем логику из stdlib
+call math_max(100, 250)
 
-let i = 0
-while i < size(users) {
-    let current = users[i]
-    out "Checking user: " + current
-    if current == "Owner" {
-        out "Access Level: MAX"
-        call system_diag()
-    }
-    let i = i + 1
-}
+# Системное действие из utils
+call create_log("Сессия запущена пользователем " + developer)
 
-out "Program finished at: " + str(now())
+out "Текущее время: " + now()
+out "--- ПРОГРАММА ЗАВЕРШЕНА ---"
