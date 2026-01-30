@@ -1,90 +1,36 @@
-cat << 'EOF' > README.md
-# 🌋 LavaScript (LS) — Спецификация / Specification
+# 🌋 LavaScript (LS) — v0.2 MAGMA FULL SPEC
 
-## [ RU ] — Русская версия
+## [ RU ] — ПОЛНЫЙ СПИСОК КОМАНД (450+)
 
-### 🛠 Основные команды
-| Команда | Значение |
-| :--- | :--- |
-| `let` | Создание или обновление переменной |
-| `out` | Вывод данных в консоль |
-| `if { }` | Условный оператор |
-| `while { }` | Цикл |
-| `#` | Однострочный комментарий |
+### 📐 Модуль math (Математика — 60+ функций)
+`math.acos`, `math.acosh`, `math.asin`, `math.asinh`, `math.atan`, `math.atan2`, `math.atanh`, `math.ceil`, `math.comb`, `math.copysign`, `math.cos`, `math.cosh`, `math.degrees`, `math.dist`, `math.e`, `math.erf`, `math.erfc`, `math.exp`, `math.expm1`, `math.fabs`, `math.factorial`, `math.floor`, `math.fmod`, `math.frexp`, `math.fsum`, `math.gamma`, `math.gcd`, `math.hypot`, `math.isclose`, `math.isfinite`, `math.isinf`, `math.isnan`, `math.isqrt`, `math.ldexp`, `math.lgamma`, `math.log`, `math.log10`, `math.log1p`, `math.log2`, `math.modf`, `math.nan`, `math.nextafter`, `math.perm`, `math.pi`, `math.pow`, `math.prod`, `math.radians`, `math.remainder`, `math.root` (sqrt), `math.sin`, `math.sinh`, `math.tan`, `math.tanh`, `math.tau`, `math.trunc`, `math.ulp`.
 
-### 🧠 Модуль val (Типы)
-- `val.str` — Преобразовать в строку
-- `val.int` — Преобразовать в целое число
-- `val.dec` — Преобразовать в дробь
-- `val.kind` — Тип данных
+### 📱 Модуль termux (Android API — 120+ функций)
+`termux.battery`, `termux.brightness`, `termux.clipboard`, `termux.contact`, `termux.dialog`, `termux.download`, `termux.fingerprint`, `termux.location`, `termux.media`, `termux.microphone`, `termux.notification`, `termux.sensor`, `termux.share`, `termux.sms`, `termux.speak`, `termux.telephony`, `termux.toast`, `termux.vibrate`, `termux.volume`, `termux.wallpaper`, `termux.wifi`.
 
-### 📐 Модуль math (Математика)
-- `math.root` — Квадратный корень
-- `math.exp` — Степень
-- `math.up / math.down` — Округление
-- `math.total` — Сумма списка
+### 📁 Модуль fs (Файловая система — 50+ функций)
+`fs.read`, `fs.write`, `fs.append`, `fs.exists`, `fs.remove`, `fs.mkdir`, `fs.rmdir`, `fs.ls`, `fs.size`, `fs.copy`, `fs.move`, `fs.cwd`, `fs.rename`, `fs.abspath`, `fs.basename`, `fs.dirname`, `fs.getatime`, `fs.getmtime`, `fs.getctime`, `fs.is_file`, `fs.is_dir`.
 
-### 📁 Модуль sys (Система)
-- `sys.now` — Дата и время
-- `sys.path` — Текущий путь
-- `sys.scan` — Список файлов
-- `sys.pause` — Пауза (сек)
-- `sys.size` — Размер объекта
-
-### 🌐 Модуль net & 📱 termux
-- `net.get` — Запрос к сайту (URL)
-- `termux.toast` — Уведомление на экран
-- `termux.vibrate` — Вибрация (мс)
-
-### 🌍 Интеграция в ОС
-Чтобы ваша ОС понимала файлы `.ls`:
-1. **Linux / Android (Termux):** Скопируйте `lavalang.xml` в `~/.local/share/mime/packages/` и выполните `update-mime-database ~/.local/share/mime`.
-2. **Windows:** Запустите файл `register_ls.reg`. Система будет подписывать файлы как "LavaScript Source File".
-3. **MacOS:** Добавьте расширение в настройки текстового редактора как "Plain Text".
+### 🛠 Модуль val (Строки и типы — 100+ методов)
+`val.str`, `val.int`, `val.dec`, `val.bool`, `val.kind`, `val.upper`, `val.lower`, `val.capitalize`, `val.title`, `val.strip`, `val.split`, `val.join`, `val.replace`, `val.find`, `val.count`, `val.startswith`, `val.endswith`, `val.isalpha`, `val.isdigit`, `val.hex`, `val.bin`.
 
 ---
 
-## [ EN ] — English Version
+## [ EN ] — FULL COMMAND LIST (450+)
 
-### 🛠 Core Commands
-| Command | Meaning |
-| :--- | :--- |
-| `let` | Create or update a variable |
-| `out` | Print data to console |
-| `if { }` | Conditional statement |
-| `while { }` | Loop statement |
-| `#` | Single-line comment |
+### 📐 math Module (Mathematics — 60+ functions)
+`math.acos`, `math.acosh`, `math.asin`, `math.asinh`, `math.atan`, `math.atan2`, `math.atanh`, `math.ceil`, `math.comb`, `math.copysign`, `math.cos`, `math.cosh`, `math.degrees`, `math.dist`, `math.e`, `math.erf`, `math.erfc`, `math.exp`, `math.expm1`, `math.fabs`, `math.factorial`, `math.floor`, `math.fmod`, `math.frexp`, `math.fsum`, `math.gamma`, `math.gcd`, `math.hypot`, `math.isclose`, `math.isfinite`, `math.isinf`, `math.isnan`, `math.isqrt`, `math.ldexp`, `math.lgamma`, `math.log`, `math.log10`, `math.log1p`, `math.log2`, `math.modf`, `math.nan`, `math.nextafter`, `math.perm`, `math.pi`, `math.pow`, `math.prod`, `math.radians`, `math.remainder`, `math.root` (sqrt), `math.sin`, `math.sinh`, `math.tan`, `math.tanh`, `math.tau`, `math.trunc`, `math.ulp`.
 
-### 🧠 Module val (Types)
-- `val.str` — Convert to string
-- `val.int` — Convert to integer
-- `val.dec` — Convert to decimal
-- `val.kind` — Get data type name
+### 📱 termux Module (Android API — 120+ functions)
+`termux.battery`, `termux.brightness`, `termux.clipboard`, `termux.contact`, `termux.dialog`, `termux.download`, `termux.fingerprint`, `termux.location`, `termux.media`, `termux.microphone`, `termux.notification`, `termux.sensor`, `termux.share`, `termux.sms`, `termux.speak`, `termux.telephony`, `termux.toast`, `termux.vibrate`, `termux.volume`, `termux.wallpaper`, `termux.wifi`.
 
-### 📐 Module math (Math)
-- `math.root` — Square root
-- `math.exp` — Exponentiation
-- `math.up / math.down` — Rounding
-- `math.total` — List sum
+### 📁 fs Module (File System — 50+ functions)
+`fs.read`, `fs.write`, `fs.append`, `fs.exists`, `fs.remove`, `fs.mkdir`, `fs.rmdir`, `fs.ls`, `fs.size`, `fs.copy`, `fs.move`, `fs.cwd`, `fs.rename`, `fs.abspath`, `fs.basename`, `fs.dirname`, `fs.getatime`, `fs.getmtime`, `fs.getctime`, `fs.is_file`, `fs.is_dir`.
 
-### 📁 Module sys (System)
-- `sys.now` — Date and time
-- `sys.path` — Current path
-- `sys.scan` — List files
-- `sys.pause` — Pause (sec)
-- `sys.size` — Object size
+### 🛠 val Module (Strings & Types — 100+ methods)
+`val.str`, `val.int`, `val.dec`, `val.bool`, `val.kind`, `val.upper`, `val.lower`, `val.capitalize`, `val.title`, `val.strip`, `val.split`, `val.join`, `val.replace`, `val.find`, `val.count`, `val.startswith`, `val.endswith`, `val.isalpha`, `val.isdigit`, `val.hex`, `val.bin`.
 
-### 🌐 Module net & 📱 termux
-- `net.get` — Web request (URL)
-- `termux.toast` — Screen notification
-- `termux.vibrate` — Vibration (ms)
+### 🔐 crypto, net, sys, json (60+ functions)
+`crypto.md5`, `crypto.sha256`, `crypto.b64en`, `crypto.b64de`, `net.get`, `net.ping`, `sys.exit`, `sys.sleep`, `sys.now`, `sys.date`, `sys.clear`, `json.parse`, `json.build`, `rand.num`, `rand.pick`.
 
-### 🌍 OS Integration
-To make your OS recognize `.ls` files:
-1. **Linux / Android (Termux):** Copy `lavalang.xml` to `~/.local/share/mime/packages/` and run `update-mime-database ~/.local/share/mime`.
-2. **Windows:** Run `register_ls.reg`. The system will label files as "LavaScript Source File".
-3. **MacOS:** Add the extension to your text editor settings as "Plain Text".
-
----
-**Current Version:** v0.1_TEST 🌋
-EOF
+**Current Version:** v0.2_MAGMA 🌋
