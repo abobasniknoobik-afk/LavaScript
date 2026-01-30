@@ -12,8 +12,9 @@ class LavaScript:
         
         def color_text(code, text): return f"\033[{code}m{text}\033[0m"
         
-        self.ctx = {
-            "val": LSModule(str=str, int=int, dec=float, logic=bool, kind=lambda x: type(x).__name__),
+        # Модули
+        self.modules = {
+            "val": LSModule(str=str, int=int, dec=float, kind=lambda x: type(x).__name__),
             "math": LSModule(root=math.sqrt, exp=pow, up=math.ceil, down=math.floor, total=sum),
             "sys": LSModule(
                 size=len, path=os.getcwd, scan=os.listdir, now=lambda: time.ctime(),
@@ -32,76 +33,39 @@ class LavaScript:
             )
         }
 
-    def tokenize(self, code):
-        code = re.sub(r'#.*', '', code)
-        pattern = r'(\{|\}|\[|\]|\(|\)|,|<<|>>|==|!=|>=|<=|[=+\-*/:]|[\w\.]+|"[^"]*")'
-        tokens = []
-        for line in code.split('\n'):
-            line = line.strip()
-            if not line: continue
-            t = re.findall(pattern, line)
-            if t: tokens.append(t)
-        return tokens
-
-    def parse_structure(self, tokens):
-        res, i = [], 0
-        while i < len(tokens):
-            line = tokens[i]
-            if "{" in line:
-                block, bal, i = [], 1, i + 1
-                while i < len(tokens) and bal > 0:
-                    if "{" in tokens[i]: bal += 1
-                    if "}" in tokens[i]: bal -= 1
-                    if bal > 0: block.append(tokens[i])
-                    i += 1
-                res.append({"type": "block", "header": line, "body": self.parse_structure(block)})
-            else:
-                res.append({"type": "statement", "content": line})
-                i += 1
-        return res
-
-    def safe_eval(self, expr_list, scope):
-        # Очищаем выражение и заменяем логику
-        clean_expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
+    def safe_eval(self, tokens, scope):
+        # Собираем выражение обратно в строку для корректного eval
+        expr = " ".join(tokens)
+        if not expr.strip(): return ""
+        
+        # Подготавливаем окружение (модули + переменные)
+        env = {**self.modules, **scope}
+        
         try:
-            # Важнейшая часть: объединяем контекст модулей и переменные
-            full_ctx = {}
-            for mod_name, mod_obj in self.ctx.items():
-                full_ctx[mod_name] = mod_obj
-            full_ctx.update(scope)
-            
-            return eval(clean_expr, {"__builtins__": None}, full_ctx)
-        except Exception as e: return f"<Error: {e}>"
+            return eval(expr, {"__builtins__": None}, env)
+        except Exception as e:
+            return f"<Error: {e}>"
 
-    def run(self, tree, scope):
-        for node in tree:
-            if node["type"] == "statement":
-                cmd = node["content"]
-                if not cmd: continue
-                
-                # Основные команды
-                if cmd[0] == "out":
-                    val = self.safe_eval(cmd[1:], scope)
-                    print(f"\033[38;5;208m[LAVA]\033[0m {val}")
-                elif cmd[0] == "let":
-                    if "=" in cmd:
-                        split_idx = cmd.index("=")
-                        var_name = cmd[1]
-                        scope[var_name] = self.safe_eval(cmd[split_idx+1:], scope)
-                elif cmd[0] == "type":
-                    val = self.safe_eval(cmd[1:], scope)
-                    t_name = type(val).__name__ if not isinstance(val, str) or "<Error" not in val else "error"
-                    print(f"\033[38;5;111m[TYPE]\033[0m {t_name}")
-                else:
-                    # Если это просто вызов функции типа sys.info()
-                    self.safe_eval(cmd, scope)
+    def run_line(self, line, scope):
+        line = line.strip()
+        if not line or line.startswith("#"): return
 
-            elif node["type"] == "block":
-                h = node["header"]
-                if h[0] == "while":
-                    while bool(self.safe_eval(h[1:], scope)): self.run(node["body"], scope)
-                elif h[0] == "if":
-                    if bool(self.safe_eval(h[1:], scope)): self.run(node["body"], scope)
+        # Простая токенизация по пробелам для команд
+        tokens = re.findall(r'[\w\.]+|"[^"]*"|[=+\-*/()]', line)
+        if not tokens: return
+
+        if tokens[0] == "out":
+            print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(tokens[1:], scope)}")
+        elif tokens[0] == "let" and "=" in tokens:
+            eq_idx = tokens.index("=")
+            var_name = tokens[1]
+            scope[var_name] = self.safe_eval(tokens[eq_idx+1:], scope)
+        elif tokens[0] == "type":
+            val = self.safe_eval(tokens[1:], scope)
+            print(f"\033[38;5;111m[TYPE]\033[0m {type(val).__name__}")
+        else:
+            # Прямой вызов (например sys.info())
+            self.safe_eval(tokens, scope)
 
     def repl(self):
         print(f"\033[1;33mLavaScript {self.version}\033[0m (Interactive REPL)")
@@ -109,8 +73,7 @@ class LavaScript:
             try:
                 line = input("\033[38;5;226mLS>\033[0m ")
                 if line.lower() in ["exit", "quit"]: break
-                if not line.strip(): continue
-                self.run(self.parse_structure(self.tokenize(line)), self.global_scope)
+                self.run_line(line, self.global_scope)
             except (KeyboardInterrupt, EOFError): break
             except Exception as e: print(f"Runtime Error: {e}")
 
@@ -118,5 +81,7 @@ if __name__ == "__main__":
     engine = LavaScript()
     if len(sys.argv) > 1:
         if sys.argv[1] == "--version": print(f"LavaScript {engine.version}")
-        else: engine.start(sys.argv[1])
+        else:
+            with open(sys.argv[1], 'r') as f:
+                for line in f: engine.run_line(line, engine.global_scope)
     else: engine.repl()
