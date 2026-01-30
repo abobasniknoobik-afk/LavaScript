@@ -1,36 +1,45 @@
 import sys, os, re, math, time, subprocess, random
 
+# Специальный класс для создания департаментов LS
+class LSDepartment:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 class LavaScript:
     def __init__(self):
-        # Наш эксклюзивный набор команд под стиль LS
-        self.ls_builtins = {
-            # VAL - Работа с типами
-            "val.str": str, "val.int": int, "val.dec": float, "val.logic": bool,
-            "val.kind": lambda x: type(x).__name__, "val.module": abs,
-            "val.to_hex": hex, "val.to_bin": bin, "val.code": ord, "val.char": chr,
-            
-            # MATH - Высшие вычисления
-            "math.root": math.sqrt, "math.exp": pow, "math.up": math.ceil,
-            "math.down": math.floor, "math.sin": math.sin, "math.cos": math.cos,
-            "math.log": math.log, "math.fix": round, "math.total": sum,
-            "math.peak": max, "math.base": min,
-            
-            # SYS - Взаимодействие с окружением
-            "sys.size": len, "sys.step": range, "sys.link": enumerate,
-            "sys.halt": sys.exit, "sys.pause": time.sleep, "sys.path": os.getcwd,
-            "sys.scan": os.listdir, "sys.env": sys.platform, "sys.now": lambda: time.ctime(),
-            "sys.id": id, "sys.rev": reversed, "sys.sort": sorted,
-            
-            # RAND - Генерация случайности
-            "rand.num": random.randint, "rand.select": random.choice, "rand.chaos": random.shuffle,
-            
-            # IO - Ввод/Вывод
-            "io.out": print, "io.get": input, "io.file": open, "io.inject": eval,
-            "io.inspect": dir, "io.vars": vars,
-            
-            # Базовые структуры
+        # Группируем всё в реальные объекты для чистого синтаксиса через точку
+        self.val = LSDepartment(
+            str=str, int=int, dec=float, logic=bool,
+            kind=lambda x: type(x).__name__, module=abs,
+            to_hex=hex, to_bin=bin, code=ord, char=chr
+        )
+        self.math = LSDepartment(
+            root=math.sqrt, exp=pow, up=math.ceil, down=math.floor,
+            sin=math.sin, cos=math.cos, log=math.log, fix=round,
+            total=sum, peak=max, base=min
+        )
+        self.sys = LSDepartment(
+            size=len, step=range, link=enumerate, halt=sys.exit,
+            pause=time.sleep, path=os.getcwd, scan=os.listdir,
+            env=sys.platform, now=lambda: time.ctime(), id=id,
+            rev=reversed, sort=sorted
+        )
+        self.rand = LSDepartment(
+            num=random.randint, select=random.choice, chaos=random.shuffle
+        )
+        self.io = LSDepartment(
+            out=print, get=input, file=open, inject=eval,
+            inspect=dir, vars=vars
+        )
+        
+        # Базовый словарь для eval
+        self.base_ctx = {
+            "val": self.val, "math": self.math, "sys": self.sys,
+            "rand": self.rand, "io": self.io,
             "list": list, "dict": dict, "set": set, "tuple": tuple
         }
+        
         self.functions = {}
         self.includes = set()
 
@@ -67,13 +76,13 @@ class LavaScript:
         return res
 
     def safe_eval(self, expr_list, scope):
-        # Очистка и замена булевых значений
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
-            ctx = {**self.ls_builtins, **scope}
+            # Теперь ctx содержит РЕАЛЬНЫЕ объекты val, sys и т.д.
+            ctx = {**self.base_ctx, **scope}
             return eval(expr, {"__builtins__": None}, ctx)
         except Exception as e:
-            return None
+            return f"<EvalError: {e}>"
 
     def run(self, tree, scope):
         for node in tree:
@@ -83,7 +92,6 @@ class LavaScript:
                 
                 if cmd[0] == "out":
                     res = self.safe_eval(cmd[1:], scope)
-                    # Фикс: принудительно превращаем в строку, если eval не смог склеить
                     print(f"\033[38;5;208m[LAVA]\033[0m {str(res)}")
                 
                 elif cmd[0] == "let":
