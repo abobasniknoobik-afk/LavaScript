@@ -1,42 +1,45 @@
 #!/usr/bin/env python3
 import sys, os, re, math, time, subprocess, random, urllib.request
 
-class LSModule:
-    def __init__(self, **funcs):
-        self.__dict__.update(funcs)
-
 class LavaScript:
     def __init__(self):
         self.version = "v0.1_TEST"
         self.global_scope = {}
         
-        # Модули
+        # Модули в виде словарей (самый стабильный вариант для eval)
         self.modules = {
-            "val": LSModule(str=str, int=int, dec=float, kind=lambda x: type(x).__name__),
-            "math": LSModule(root=math.sqrt, exp=pow, up=math.ceil, down=math.floor, total=sum),
-            "sys": LSModule(
-                size=len, path=os.getcwd, scan=os.listdir, now=lambda: time.ctime(),
-                pause=time.sleep, clear=lambda: os.system('clear'),
-                info=lambda: print(f"\033[1;35mLavaScript v{self.version}\033[0m on {sys.platform}")
-            ),
-            "gui": LSModule(
-                red=lambda t: f"\033[31m{t}\033[0m",
-                green=lambda t: f"\033[32m{t}\033[0m",
-                blue=lambda t: f"\033[34m{t}\033[0m",
-                gold=lambda t: f"\033[33m{t}\033[0m"
-            ),
-            "net": LSModule(get=lambda url: urllib.request.urlopen(url).read().decode('utf-8')),
-            "termux": LSModule(
-                toast=lambda m: subprocess.run(["termux-toast", str(m)]),
-                vibrate=lambda ms: subprocess.run(["termux-vibrate", "-d", str(ms)])
-            )
+            "val": {"str": str, "int": int, "dec": float, "kind": lambda x: type(x).__name__},
+            "math": {"root": math.sqrt, "exp": pow, "up": math.ceil, "down": math.floor, "total": sum},
+            "sys": {
+                "size": len, "path": os.getcwd, "scan": os.listdir, "now": lambda: time.ctime(),
+                "pause": time.sleep, "clear": lambda: os.system('clear'),
+                "info": lambda: print(f"\x1b[1;35mLavaScript v{self.version}\x1b[0m on {sys.platform}")
+            },
+            "gui": {
+                "red": lambda t: f"\x1b[31m{t}\x1b[0m",
+                "green": lambda t: f"\x1b[32m{t}\033[0m",
+                "blue": lambda t: f"\x1b[34m{t}\x1b[0m",
+                "gold": lambda t: f"\x1b[33m{t}\x1b[0m"
+            },
+            "net": {"get": lambda url: urllib.request.urlopen(url).read().decode('utf-8')},
+            "termux": {
+                "toast": lambda m: subprocess.run(["termux-toast", str(m)]),
+                "vibrate": lambda ms: subprocess.run(["termux-vibrate", "-d", str(ms)])
+            }
         }
 
     def safe_eval(self, code, scope):
-        if not code.strip(): return ""
-        # Создаем чистое окружение
+        code = code.strip()
+        if not code: return ""
+        # Объединяем модули и переменные
         env = {**self.modules, **scope}
         try:
+            # Превращаем словари в объекты "на лету" через SimpleNamespace для поддержки точки
+            from types import SimpleNamespace
+            for key in self.modules:
+                if isinstance(self.modules[key], dict):
+                    env[key] = SimpleNamespace(**self.modules[key])
+            
             return eval(code, {"__builtins__": None}, env)
         except Exception as e:
             return f"<Error: {e}>"
@@ -45,7 +48,6 @@ class LavaScript:
         line = line.strip()
         if not line or line.startswith("#"): return
 
-        # Логика LET (let x = выражение)
         if line.startswith("let "):
             match = re.match(r'^let\s+(\w+)\s*=\s*(.*)$', line)
             if match:
@@ -53,27 +55,24 @@ class LavaScript:
                 scope[var_name] = self.safe_eval(expr, scope)
             return
 
-        # Логика OUT (out выражение)
         if line.startswith("out "):
             expr = line[4:].strip()
-            print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(expr, scope)}")
+            print(f"\x1b[38;5;208m[LAVA]\x1b[0m {self.safe_eval(expr, scope)}")
             return
 
-        # Логика TYPE (type выражение)
         if line.startswith("type "):
             expr = line[5:].strip()
             val = self.safe_eval(expr, scope)
-            print(f"\033[38;5;111m[TYPE]\033[0m {type(val).__name__}")
+            print(f"\x1b[38;5;111m[TYPE]\x1b[0m {type(val).__name__}")
             return
 
-        # Просто вызов (например sys.info())
         self.safe_eval(line, scope)
 
     def repl(self):
-        print(f"\033[1;33mLavaScript {self.version}\033[0m (Interactive REPL)")
+        print(f"\x1b[1;33mLavaScript {self.version}\x1b[0m (Interactive REPL)")
         while True:
             try:
-                line = input("\033[38;5;226mLS>\033[0m ")
+                line = input("\x1b[38;5;226mLS>\x1b[0m ")
                 if line.lower() in ["exit", "quit"]: break
                 self.run_line(line, self.global_scope)
             except (KeyboardInterrupt, EOFError): break
