@@ -10,8 +10,6 @@ class LavaScript:
         self.version = "v0.1_TEST"
         self.global_scope = {}
         
-        def color_text(code, text): return f"\033[{code}m{text}\033[0m"
-        
         # Модули
         self.modules = {
             "val": LSModule(str=str, int=int, dec=float, kind=lambda x: type(x).__name__),
@@ -22,9 +20,10 @@ class LavaScript:
                 info=lambda: print(f"\033[1;35mLavaScript v{self.version}\033[0m on {sys.platform}")
             ),
             "gui": LSModule(
-                red=lambda t: color_text("31", t), green=lambda t: color_text("32", t),
-                blue=lambda t: color_text("34", t), gold=lambda t: color_text("33", t),
-                bold=lambda t: color_text("1", t)
+                red=lambda t: f"\033[31m{t}\033[0m",
+                green=lambda t: f"\033[32m{t}\033[0m",
+                blue=lambda t: f"\033[34m{t}\033[0m",
+                gold=lambda t: f"\033[33m{t}\033[0m"
             ),
             "net": LSModule(get=lambda url: urllib.request.urlopen(url).read().decode('utf-8')),
             "termux": LSModule(
@@ -33,16 +32,12 @@ class LavaScript:
             )
         }
 
-    def safe_eval(self, tokens, scope):
-        # Собираем выражение обратно в строку для корректного eval
-        expr = " ".join(tokens)
-        if not expr.strip(): return ""
-        
-        # Подготавливаем окружение (модули + переменные)
+    def safe_eval(self, code, scope):
+        if not code.strip(): return ""
+        # Создаем чистое окружение
         env = {**self.modules, **scope}
-        
         try:
-            return eval(expr, {"__builtins__": None}, env)
+            return eval(code, {"__builtins__": None}, env)
         except Exception as e:
             return f"<Error: {e}>"
 
@@ -50,22 +45,29 @@ class LavaScript:
         line = line.strip()
         if not line or line.startswith("#"): return
 
-        # Простая токенизация по пробелам для команд
-        tokens = re.findall(r'[\w\.]+|"[^"]*"|[=+\-*/()]', line)
-        if not tokens: return
+        # Логика LET (let x = выражение)
+        if line.startswith("let "):
+            match = re.match(r'^let\s+(\w+)\s*=\s*(.*)$', line)
+            if match:
+                var_name, expr = match.groups()
+                scope[var_name] = self.safe_eval(expr, scope)
+            return
 
-        if tokens[0] == "out":
-            print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(tokens[1:], scope)}")
-        elif tokens[0] == "let" and "=" in tokens:
-            eq_idx = tokens.index("=")
-            var_name = tokens[1]
-            scope[var_name] = self.safe_eval(tokens[eq_idx+1:], scope)
-        elif tokens[0] == "type":
-            val = self.safe_eval(tokens[1:], scope)
+        # Логика OUT (out выражение)
+        if line.startswith("out "):
+            expr = line[4:].strip()
+            print(f"\033[38;5;208m[LAVA]\033[0m {self.safe_eval(expr, scope)}")
+            return
+
+        # Логика TYPE (type выражение)
+        if line.startswith("type "):
+            expr = line[5:].strip()
+            val = self.safe_eval(expr, scope)
             print(f"\033[38;5;111m[TYPE]\033[0m {type(val).__name__}")
-        else:
-            # Прямой вызов (например sys.info())
-            self.safe_eval(tokens, scope)
+            return
+
+        # Просто вызов (например sys.info())
+        self.safe_eval(line, scope)
 
     def repl(self):
         print(f"\033[1;33mLavaScript {self.version}\033[0m (Interactive REPL)")
