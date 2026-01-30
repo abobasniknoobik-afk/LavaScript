@@ -1,26 +1,26 @@
-# ==========================================
-# LavaScript Standard Library (stdlib.ls)
-# ==========================================
-
-# Работа со строками
-fn capitalize(text) {
-    let result = str(text).upper()
-    out "Преобразование: " + result
-}
-
-# Математические операции в стиле JS
-fn math_max(a, b) {
-    if a > b {
-        out "Максимум: " + str(a)
-    }
-    if b >= a {
-        out "Максимум: " + str(b)
+# Мощная библиотека для работы со структурами
+fn analyze_data_stream(data) {
+    let i = 0
+    out "--- НАЧАЛО ГЛУБОКОГО АНАЛИЗА ---"
+    while i < size(data) {
+        let item = data[i]
+        out "Проверка узла: " + str(item)
+        if item == "CRITICAL" {
+            out "!!! ОБНАРУЖЕНА УГРОЗА В ПОТОКЕ !!!"
+        }
+        let i = i + 1
     }
 }
 
-# Работа с массивами
-fn array_summary(arr) {
-    let s = size(arr)
-    out "Элементов в массиве: " + str(s)
-    out "Тип структуры: " + type(arr)
+fn simulate_node_logic(input_val) {
+    # Имитация весов нейрона
+    let weight = 0.5
+    let threshold = 10
+    let result = input_val * weight
+    if result > threshold {
+        out "Узел АКТИВИРОВАН: " + str(result)
+    }
+    if result <= threshold {
+        out "Узел СПИТ: " + str(result)
+    }
 }
