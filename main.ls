@@ -1,17 +1,18 @@
-out "=== ЗАПУСК ПОЛНОЙ ПРОВЕРКИ ==="
+out "=== ТЕСТ СИСТЕМЫ v10.0 ==="
 
-let server_status = ["OK", "STABLE", "CRITICAL", "OK"]
+let status = ["START", "PROCESS", "FINISH"]
 let i = 0
 
-while i < size(server_status) {
-    let current = server_status[i]
-    out "Анализ узла #" + str(i) + ": " + str(current)
-    
-    if current == "CRITICAL" {
-        out "!!! ВНИМАНИЕ: СБОЙ СЕРВЕРА !!!"
-    }
-    
+out "Длина массива: " + str(size(status))
+
+while i < size(status) {
+    let current = status[i]
+    out "Шаг " + str(i) + ": " + str(current)
     let i = i + 1
 }
 
-out "=== ПРОВЕРКА ЗАВЕРШЕНА ==="
+if i == 3 {
+    out "Логика IF: Работает"
+}
+
+out "=== ТЕСТ ЗАВЕРШЕН ==="
