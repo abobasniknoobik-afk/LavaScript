@@ -2,7 +2,6 @@ import os
 
 class LavaScript:
     def __init__(self):
-        # Здесь мы храним переменные
         self.variables = {}
 
     def run(self):
@@ -14,28 +13,32 @@ class LavaScript:
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                # Пропускаем пустые строки и комментарии
-                if not line or line.startswith("#"):
-                    continue
+                if not line or line.startswith("#"): continue
 
-                # Команда TYPE (печать текста или переменной)
+                # Команда TYPE: теперь может печатать всё
                 if line.startswith("type "):
-                    content = line[5:].strip()
-                    if content.startswith('"') and content.endswith('"'):
-                        print(content.strip('"'))
-                    else:
-                        # Если не в кавычках, ищем переменную
-                        print(self.variables.get(content, f"Ошибка: Переменная '{content}' не найдена"))
+                    expr = line[5:].strip()
+                    try:
+                        # Пытаемся вычислить выражение (переменную или математику)
+                        # Передаем self.variables, чтобы eval видел наши переменные
+                        result = eval(expr, {}, self.variables)
+                        print(result)
+                    except:
+                        # Если это просто текст в кавычках
+                        print(expr.strip('"'))
 
-                # Команда MOLTEN (создание переменной)
-                # Синтаксис: molten имя << значение
+                # Команда MOLTEN: теперь считает всё
                 elif "molten" in line and "<<" in line:
                     line = line.replace("molten", "").strip()
-                    parts = line.split("<<")
-                    var_name = parts[0].strip()
-                    var_value = parts[1].strip().strip('"')
-                    self.variables[var_name] = var_value
+                    name, expr = line.split("<<")
+                    name = name.strip()
+                    expr = expr.strip()
+                    
+                    try:
+                        # Вычисляем значение перед сохранением
+                        self.variables[name] = eval(expr, {}, self.variables)
+                    except Exception as e:
+                        print(f"🌋 Ошибка в переменной {name}: {e}")
 
 if __name__ == "__main__":
-    interpreter = LavaScript()
-    interpreter.run()
+    LavaScript().run()

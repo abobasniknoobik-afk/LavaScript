@@ -1,8 +1,16 @@
-# Проверка LavaScript (LS)
-type "--- ЗАПУСК СИСТЕМЫ LAVA ---"
+# Проверка интеллекта LavaScript
+type "--- ТЕСТ ИНТЕЛЛЕКТА LS ---"
 
-molten status << "АКТИВЕН"
-type "Статус системы:"
-type status
+# Математика
+molten a << 10
+molten b << 20
+molten result << (a + b) * 5
+type "Результат (10 + 20) * 5 ="
+type result
 
-type "--- КОНЕЦ ПРОГРАММЫ ---"
+# Работа со строками
+molten greeting << "Привет, "
+molten user << "Создатель"
+type greeting + user
+
+type "--- ТЕСТ ЗАВЕРШЕН ---"
