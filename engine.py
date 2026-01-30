@@ -2,10 +2,29 @@ import sys, os, re, math, time, subprocess
 
 class LavaScript:
     def __init__(self):
-        self.globals = {
-            "PI": math.pi, "VER": "10.0.0-FINAL",
-            "size": len, "str": str, "int": int, "now": lambda: time.ctime(),
-            "platform": sys.platform
+        # Переименовываем стандартные функции в стиль LS
+        self.ls_builtins = {
+            "val.abs": abs,
+            "val.bool": bool,
+            "val.int": int,
+            "val.str": str,
+            "val.float": float,
+            "val.type": type,
+            "math.max": max,
+            "math.min": min,
+            "math.sum": sum,
+            "math.round": round,
+            "sys.size": len,
+            "sys.platform": sys.platform,
+            "sys.now": lambda: time.ctime(),
+            "sys.exec": exec,
+            "sys.dir": dir,
+            "list.create": list,
+            "list.sort": sorted,
+            "list.join": zip,
+            "io.open": open,
+            "io.input": input,
+            # Оставляем out как базовый вывод
         }
         self.functions = {}
         self.includes = set()
@@ -45,7 +64,8 @@ class LavaScript:
     def safe_eval(self, expr_list, scope):
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
-            return eval(expr, {"__builtins__": None}, {**self.globals, **scope})
+            # Используем наши оригинальные префиксы
+            return eval(expr, {"__builtins__": None}, {**self.ls_builtins, **scope})
         except: return None
 
     def run(self, tree, scope):
@@ -54,16 +74,10 @@ class LavaScript:
                 cmd = node["content"]
                 if not cmd: continue
                 if cmd[0] == "out":
-                    print(f"\033[92m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
+                    print(f"\033[91m[LAVA]\033[0m {self.safe_eval(cmd[1:], scope)}")
                 elif cmd[0] == "let":
                     if "=" in cmd:
                         scope[cmd[1]] = self.safe_eval(cmd[cmd.index("=")+1:], scope)
-                elif cmd[0] == "include":
-                    path = cmd[1].strip('"')
-                    if path not in self.includes and os.path.exists(path):
-                        self.includes.add(path)
-                        with open(path, 'r', encoding='utf-8') as f:
-                            self.run(self.parse_structure(self.tokenize(f.read())), scope)
                 elif cmd[0] == "call":
                     f = self.functions.get(cmd[1])
                     if f:
@@ -71,6 +85,11 @@ class LavaScript:
                         raw = " ".join(cmd[s:e])
                         vals = [self.safe_eval([v.strip()], scope) for v in raw.split(",") if v.strip()]
                         self.run(f["body"], {**scope, **dict(zip(f["args"], vals))})
+                elif cmd[0] == "include":
+                    path = cmd[1].strip('"')
+                    if os.path.exists(path):
+                        with open(path, 'r', encoding='utf-8') as f:
+                            self.run(self.parse_structure(self.tokenize(f.read())), scope)
             elif node["type"] == "block":
                 h = node["header"]
                 if h[0] == "fn":
@@ -80,7 +99,7 @@ class LavaScript:
                     if self.safe_eval(h[1:], scope): self.run(node["body"], scope)
                 elif h[0] == "while":
                     l = 0
-                    while bool(self.safe_eval(h[1:], scope)) and l < 1000:
+                    while self.safe_eval(h[1:], scope) and l < 1000:
                         self.run(node["body"], scope)
                         l += 1
 

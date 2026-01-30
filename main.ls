@@ -1,18 +1,24 @@
-out "=== ТЕСТ СИСТЕМЫ v10.0 ==="
+out "=== LAVA SCRIPT ORIGINAL SYSTEM ==="
 
-let status = ["START", "PROCESS", "FINISH"]
+# Используем свои методы
+let data = ["Core", "Magma", "Flow"]
+let count = sys.size(data)
 let i = 0
 
-out "Длина массива: " + str(size(status))
+out "Версия системы: " + val.str(count)
 
-while i < size(status) {
-    let current = status[i]
-    out "Шаг " + str(i) + ": " + str(current)
+while i < count {
+    let node = data[i]
+    out "Обработка узла: " + node
+    
+    # Свои математические функции
+    let power = math.max(10, 50)
+    
+    if i == 1 {
+        out "Мощность на узле: " + val.str(power)
+    }
+    
     let i = i + 1
 }
 
-if i == 3 {
-    out "Логика IF: Работает"
-}
-
-out "=== ТЕСТ ЗАВЕРШЕН ==="
+out "Время завершения: " + sys.now()
