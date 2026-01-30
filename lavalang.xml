@@ -1,0 +1,10 @@
+cat << 'EOF' > lavalang.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-lavascript">
+    <comment>LavaScript Source Code</comment>
+    <glob pattern="*.ls"/>
+    <icon name="text-x-script"/>
+  </mime-type>
+</mime-info>
+EOF

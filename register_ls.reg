@@ -1,0 +1,14 @@
+cat << 'EOF' > register_ls.reg
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\.ls]
+@="LavaScript.File"
+"Content Type"="text/x-lavascript"
+"PerceivedType"="text"
+
+[HKEY_CLASSES_ROOT\LavaScript.File]
+@="LavaScript Source File"
+
+[HKEY_CLASSES_ROOT\LavaScript.File\DefaultIcon]
+@="shell32.dll,-153"
+EOF
