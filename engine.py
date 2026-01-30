@@ -2,22 +2,33 @@ import sys, os, re, math, time, subprocess, random
 
 class LavaScript:
     def __init__(self):
+        # Наш эксклюзивный набор команд под стиль LS
         self.ls_builtins = {
-            "val.abs": abs, "val.bool": bool, "val.int": int, "val.str": str, 
-            "val.float": float, "val.type": type, "val.ascii": ascii, "val.bin": bin,
-            "val.hex": hex, "val.oct": oct, "val.chr": chr, "val.ord": ord,
-            "val.bytes": bytes, "val.bytearray": bytearray, "val.complex": complex,
-            "math.max": max, "math.min": min, "math.sum": sum, "math.round": round,
-            "math.pow": pow, "math.sqrt": math.sqrt, "math.ceil": math.ceil, 
-            "math.floor": math.floor, "math.sin": math.sin, "math.cos": math.cos, 
-            "math.log": math.log, "math.divmod": divmod,
-            "sys.size": len, "sys.platform": sys.platform, "sys.now": lambda: time.ctime(),
-            "sys.sleep": time.sleep, "sys.exit": sys.exit, "sys.cwd": os.getcwd,
-            "sys.ls": os.listdir, "sys.range": range, "sys.rev": reversed,
-            "sys.sort": sorted, "sys.enum": enumerate, "sys.all": all, "sys.any": any,
-            "sys.id": id, "sys.hash": hash, "rand.int": random.randint, 
-            "rand.pick": random.choice, "rand.mix": random.shuffle,
-            "io.print": print, "io.input": input, "io.eval": eval, "io.exec": exec,
+            # VAL - Работа с типами
+            "val.str": str, "val.int": int, "val.dec": float, "val.logic": bool,
+            "val.kind": lambda x: type(x).__name__, "val.module": abs,
+            "val.to_hex": hex, "val.to_bin": bin, "val.code": ord, "val.char": chr,
+            
+            # MATH - Высшие вычисления
+            "math.root": math.sqrt, "math.exp": pow, "math.up": math.ceil,
+            "math.down": math.floor, "math.sin": math.sin, "math.cos": math.cos,
+            "math.log": math.log, "math.fix": round, "math.total": sum,
+            "math.peak": max, "math.base": min,
+            
+            # SYS - Взаимодействие с окружением
+            "sys.size": len, "sys.step": range, "sys.link": enumerate,
+            "sys.halt": sys.exit, "sys.pause": time.sleep, "sys.path": os.getcwd,
+            "sys.scan": os.listdir, "sys.env": sys.platform, "sys.now": lambda: time.ctime(),
+            "sys.id": id, "sys.rev": reversed, "sys.sort": sorted,
+            
+            # RAND - Генерация случайности
+            "rand.num": random.randint, "rand.select": random.choice, "rand.chaos": random.shuffle,
+            
+            # IO - Ввод/Вывод
+            "io.out": print, "io.get": input, "io.file": open, "io.inject": eval,
+            "io.inspect": dir, "io.vars": vars,
+            
+            # Базовые структуры
             "list": list, "dict": dict, "set": set, "tuple": tuple
         }
         self.functions = {}
@@ -56,13 +67,13 @@ class LavaScript:
         return res
 
     def safe_eval(self, expr_list, scope):
+        # Очистка и замена булевых значений
         expr = " ".join(expr_list).replace("true", "True").replace("false", "False")
         try:
             ctx = {**self.ls_builtins, **scope}
             return eval(expr, {"__builtins__": None}, ctx)
         except Exception as e:
-            # Вместо None возвращаем описание ошибки, чтобы ты видел, где косяк
-            return f"<EvalError: {e}>"
+            return None
 
     def run(self, tree, scope):
         for node in tree:
@@ -72,7 +83,7 @@ class LavaScript:
                 
                 if cmd[0] == "out":
                     res = self.safe_eval(cmd[1:], scope)
-                    # Фикс: Автоматическое приведение к строке для вывода
+                    # Фикс: принудительно превращаем в строку, если eval не смог склеить
                     print(f"\033[38;5;208m[LAVA]\033[0m {str(res)}")
                 
                 elif cmd[0] == "let":
@@ -96,11 +107,11 @@ class LavaScript:
                     self.functions[name] = {"args": args, "body": node["body"]}
                 elif h[0] == "while":
                     l = 0
-                    while self.safe_eval(h[1:], scope) == True and l < 1000:
+                    while bool(self.safe_eval(h[1:], scope)) and l < 2000:
                         self.run(node["body"], scope)
                         l += 1
                 elif h[0] == "if":
-                    if self.safe_eval(h[1:], scope):
+                    if bool(self.safe_eval(h[1:], scope)):
                         self.run(node["body"], scope)
 
     def start(self, path):
