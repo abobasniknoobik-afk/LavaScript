@@ -100,5 +100,10 @@ if __name__ == "__main__":
             engine.start(sys.argv[1])
 EOF
 
-cp engine.py $PREFIX/bin/lava
-chmod +x $PREFIX/bin/lava
+if __name__ == "__main__":
+    engine = LavaScript()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--version":
+            print(f"LavaScript {engine.version}")
+        else:
+            engine.start(sys.argv[1])
