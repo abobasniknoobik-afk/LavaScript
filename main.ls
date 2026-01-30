@@ -1,11 +1,26 @@
-type "--- ИГРА: ТЕРМИНАЛЬНЫЙ ВУЛКАН ---"
-molten secret << random(10)
-type "Я загадал число от 0 до 10. Попробуй угадать!"
+# LavaScript Professional v4.0
+out "--- LAVA ENGINE 4.0 LOADED ---"
 
-ask guess << "Твой вариант: "
-molten g_num << int(guess)
+# 1. Объявление функции
+fn greet(name) {
+    out "Hello, " + name + "!"
+}
 
-flow g_num == secret : type "ПОБЕДА! Ты предсказал извержение!"
-flow g_num != secret : type "МИМО... Магма застыла. Это было число: " + str(secret)
+# 2. Переменные и арифметика
+let counter = 1
+let limit = 3
 
-type "--- КОНЕЦ СЕССИИ ---"
+# 3. Цикл While
+out "Starting loop..."
+while counter <= limit {
+    out "Iteration: " + str(counter)
+    call greet("Developer")
+    let counter = counter + 1
+}
+
+# 4. Условия
+if counter > limit {
+    out "Process finished successfully."
+}
+
+out "System version: " + VERSION
