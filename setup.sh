@@ -1,6 +1,6 @@
 #!/bin/bash
-echo "Setting up LavaScript..."
+echo "Installing LavaScript..."
 chmod +x engine.py
 echo "alias lava='python $(pwd)/engine.py'" >> ~/.bashrc
 source ~/.bashrc
-echo "LavaScript installed! Use 'lava file.ls' to run."
+echo "Ready! Type 'lava main.ls' to run."

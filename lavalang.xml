@@ -1,5 +1,7 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <language id="ls" name="LavaScript">
-    <keywords>let, out, if, else, for, while</keywords>
+    <keywords>let, out, math, sys, fs, termux, val, gui, crypto, net, rand</keywords>
     <comments>#</comments>
     <string>"</string>
+    <operators>=, +, -, *, /, ==</operators>
 </language>

@@ -1,9 +1,7 @@
-# === LAVA STDLIB v0.2 ===
+# === LAVA STDLIB v0.2.2 ===
 let PI = math.pi
 let E = math.e
-let PLATFORM = sys.shell("uname -a")
-let IS_TERMUX = fs.exists("/data/data/com.termux")
+let OS = sys.platform
+let START_TIME = sys.now()
 
-# Базовые уведомления при загрузке
-let welcome_msg = "LavaScript Magma Core Loaded"
-out gui.bold(gui.cyan(welcome_msg))
+out gui.bold(gui.cyan("--- СТАНДАРТНАЯ БИБЛИОТЕКА ЗАГРУЖЕНА ---"))

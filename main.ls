@@ -1,10 +1,16 @@
-# Подключаем библиотеки (имитация импорта через чтение файлов)
-out gui.gold("--- ЗАПУСК MAIN ---")
+# === ГЛАВНЫЙ ФАЙЛ LAVA ===
+out gui.bold(gui.gold("=== ПРИВЕТ ИЗ LAVASCRIPT ==="))
 
-let my_ip = net.ip()
-out "Мой IP: " + my_ip
+# Безопасный запрос батареи
+let b_data = termux.battery()
+let percent = val.get(b_data, "percentage", "N/A")
+out "Заряд устройства: " + val.str(percent) + "%"
 
-let b = termux.battery()
-out "Заряд: " + val.str(val.get(b, "percentage", 0)) + "%"
+out "Система: " + sys.platform
 
-out gui.green("--- СИСТЕМА OK ---")
+# Геометрия
+let radius = 12
+let res = math.pi * math.pow(radius, 2)
+out "Площадь круга (r=12): " + val.str(res)
+
+out gui.bold(gui.red("LAVA IS HOT"))

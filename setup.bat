@@ -1,6 +1,5 @@
 @echo off
-echo Installing LavaScript Environment...
 assoc .ls=LavaScriptFile
 ftype LavaScriptFile=python.exe "%1" %*
-echo Done!
+echo LavaScript (.ls) registered for Windows.
 pause

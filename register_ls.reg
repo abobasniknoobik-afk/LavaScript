@@ -1,7 +1,5 @@
 Windows Registry Editor Version 5.00
-
 [HKEY_CLASSES_ROOT\.ls]
 @="LavaScriptFile"
-
 [HKEY_CLASSES_ROOT\LavaScriptFile\shell\open\command]
 @="python.exe \"%1\""
