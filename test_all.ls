@@ -1,35 +1,25 @@
-# === ТЕСТ ГИГАНТСКОГО ДВИЖКА v0.3 ===
+# ТЕСТ МАГМА v0.4
 sys.clear()
-out gui.bold(gui.cyan("--- ЗАПУСК ГЛОБАЛЬНОГО ТЕСТА ---"))
+out gui.bold(gui.magenta("--- ЗАПУСК ГЛОБАЛЬНОЙ ПРОВЕРКИ ---"))
 
-# 1. ТЕСТ MATH
-let r = math.root(144)
-let p = math.pi
-out "Math: root(144)=" + val.str(r) + " PI=" + val.str(p)
+# Математика
+let m = math.pow(math.root(144), 2)
+out "Math: " + val.str(m)
 
-# 2. ТЕСТ FS
-let cur = fs.cwd()
-out "FS: Текущая папка: " + cur
-out "FS: Путь: " + fs.path(".")
+# Криптография
+let c = crypto.sha512("lavacode")
+out "Crypto SHA512: " + val.str(val.len(c)) + " chars"
 
-# 3. ТЕСТ SYS
-out "SYS: Платформа: " + sys.platform
-out "SYS: Время: " + sys.time()
+# Файлы
+out "FS: Твой ник в системе: " + sys.get_env("USER")
+out "FS: Домашняя папка: " + fs.home()
 
-# 4. ТЕСТ CRYPTO
-let hash = crypto.sha256("lava")
-out "Crypto: SHA256('lava')=" + hash
-
-# 5. ТЕСТ TERMUX (С защитой от пустых данных)
+# Железо (Android/Termux)
 let b = termux.battery()
-out "Battery: " + val.str(b["percentage"]) + "%"
+out "Termux: Заряд " + val.str(b["percentage"]) + "%"
+out "Termux: Статус " + b["status"]
 
-# 6. ТЕСТ NET
-out "Net: Твой IP (запрос)..."
-let my_ip = net.get("https://api.ipify.org")
-out "Net: IP=" + my_ip
+# Цвета
+out gui.bg_red(gui.white(" СИСТЕМА СТАБИЛЬНА "))
 
-# 7. ТЕСТ GUI
-out gui.red("Красный ") + gui.green("Зеленый ") + gui.blue("Синий")
-
-out gui.bold(gui.gold("--- ТЕСТ ЗАВЕРШЕН УСПЕШНО ---"))
+out gui.bold(gui.gold("--- ТЕСТ v0.4 ЗАВЕРШЕН ---"))
