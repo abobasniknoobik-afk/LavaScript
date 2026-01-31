@@ -1,74 +1,65 @@
 #!/usr/bin/env python3
-import sys, os, re, math, time, subprocess, random, urllib.request, hashlib, json, base64, shutil, datetime
-from types import SimpleNamespace
+import sys, os, re, math, time, subprocess, random, urllib.request, hashlib, json, base64
+
+class Module:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 class LavaScript:
     def __init__(self):
-        self.version = "v0.2.4_CRYSTAL"
+        self.version = "v0.2.5_SOLID"
         self.scope = {}
 
-        # Внутренняя функция для Termux
+        # Безопасный вызов Termux
         def run_tm(cmd_list):
             try:
-                res = subprocess.run(cmd_list, capture_output=True).stdout.decode().strip()
-                return res if res else ""
+                p = subprocess.run(cmd_list, capture_output=True, timeout=2)
+                return p.stdout.decode().strip()
             except: return ""
 
-        # Модуль MATH
-        m_dict = {n: getattr(math, n) for n in dir(math) if not n.startswith("_")}
-        m_dict["root"] = math.sqrt
-
-        # Модуль FS
-        fs_dict = {
-            "read": lambda p: open(p, 'r').read(),
-            "write": lambda p, d: open(p, 'w').write(d),
-            "exists": os.path.exists,
-            "remove": os.remove,
-            "cwd": os.getcwd,
-            "path": os.path.abspath,
-            "ls": os.listdir
-        }
-
-        # Модуль TERMUX (Безопасный)
+        # Безопасная батарея
         def get_bat():
-            res = run_tm(["termux-battery-status"])
+            raw = run_tm(["termux-battery-status"])
             try:
-                d = json.loads(res) if res else {}
-                return {"percentage": d.get("percentage", 0), "status": d.get("status", "N/A")}
+                data = json.loads(raw) if raw.startswith("{") else {}
+                return {"percentage": data.get("percentage", 0), "status": data.get("status", "N/A")}
             except: return {"percentage": 0, "status": "Error"}
 
-        # Модуль VAL
-        v_dict = {
-            "str": str, "int": int, "type": lambda x: type(x).__name__,
-            "upper": lambda t: str(t).upper(), "lower": lambda t: str(t).lower()
-        }
-
-        # Окружение
+        # Инициализация модулей как объектов классов
         self.env = {
-            "math": SimpleNamespace(**m_dict),
-            "fs": SimpleNamespace(**fs_dict),
-            "val": SimpleNamespace(**v_dict),
-            "sys": SimpleNamespace(
+            "math": Module(
+                pi=math.pi, sqrt=math.sqrt, root=math.sqrt, sin=math.sin
+            ),
+            "fs": Module(
+                cwd=os.getcwd, path=os.path.abspath, ls=os.listdir,
+                exists=os.path.exists, read=lambda p: open(p, 'r').read()
+            ),
+            "val": Module(
+                str=str, int=int, type=lambda x: type(x).__name__,
+                upper=lambda t: str(t).upper(), lower=lambda t: str(t).lower()
+            ),
+            "sys": Module(
                 clear=lambda: os.system('clear' if os.name != 'nt' else 'cls'),
                 exit=sys.exit, platform=sys.platform, date=lambda: time.ctime()
             ),
-            "gui": SimpleNamespace(
+            "gui": Module(
                 gold=lambda t: f"\x1b[33m{t}\x1b[0m", red=lambda t: f"\x1b[31m{t}\x1b[0m",
                 green=lambda t: f"\x1b[32m{t}\x1b[0m", bold=lambda t: f"\x1b[1m{t}\x1b[0m"
             ),
-            "termux": SimpleNamespace(
+            "termux": Module(
                 battery=get_bat,
-                toast=lambda m: run_tm(["termux-toast", str(m)]),
-                vibrate=lambda d=200: run_tm(["termux-vibrate", "-d", str(d)])
+                vibrate=lambda d=200: run_tm(["termux-vibrate", "-d", str(d)]),
+                toast=lambda m: run_tm(["termux-toast", str(m)])
             ),
-            "net": SimpleNamespace(get=lambda url: urllib.request.urlopen(url).read().decode()),
-            "crypto": SimpleNamespace(sha256=lambda t: hashlib.sha256(str(t).encode()).hexdigest())
+            "net": Module(
+                get=lambda url: urllib.request.urlopen(url).read().decode()
+            )
         }
 
     def execute(self, line):
         line = line.strip()
         if not line or line.startswith("#"): return
-        # Важно: Eval должен видеть модули как переменные
+        # Теперь eval точно увидит атрибуты классов через точку
         ctx = {**self.env, **self.scope}
         try:
             if line.startswith("let "):

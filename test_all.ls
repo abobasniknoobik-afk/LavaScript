@@ -1,26 +1,23 @@
-# === LAVASCRIPT CRYSTAL TEST ===
+# === LAVASCRIPT SOLID TEST v0.2.5 ===
 sys.clear()
-out gui.bold(gui.gold("--- ЗАПУСК ГЛОБАЛЬНОГО ТЕСТА v0.2.4 ---"))
+out gui.bold(gui.gold("--- КРИСТАЛЬНЫЙ ТЕСТ ---"))
 
-# 1. Математика (Тест .root)
-let x = math.root(144)
-out "Математика (root 144): " + val.str(x)
+# 1. Math (Проверка root)
+let r = math.root(144)
+out "Root test: " + val.str(r)
 
-# 2. Файловая система (Тест .path и .cwd)
-let p = fs.path(fs.cwd())
-out "Путь проекта: " + p
+# 2. FS (Проверка path)
+let my_path = fs.path(".")
+out "Path test: " + my_path
 
-# 3. Termux (Тест батареи - теперь как функция)
-let b_data = termux.battery()
-out "Заряд батареи: " + val.str(b_data["percentage"]) + "%"
+# 3. Termux Battery (ЗАМЕТЬ СКОБКИ: battery()["percentage"])
+let bat = termux.battery()
+let perc = bat["percentage"]
+out "Battery: " + val.str(perc) + "%"
 
-# 4. Типы данных
-let s = "lava"
-out "Тип переменной: " + val.type(s)
+# 4. Net
+out "Net test (IP)..."
+let ip = net.get("https://api.ipify.org")
+out "IP: " + ip
 
-# 5. Сеть (Запрос IP)
-out "Проверка сети..."
-let my_ip = net.get("https://api.ipify.org")
-out "Твой IP: " + my_ip
-
-out gui.bold(gui.green("--- ТЕСТ ЗАВЕРШЕН УСПЕШНО ---"))
+out gui.green("--- ТЕСТ ПРОЙДЕН ---")
