@@ -1,33 +1,25 @@
-# === ТЕСТ ГИГАНТСКОГО ДВИЖКА v0.4.5 ===
+# ТЕСТ ТИТАН v0.5
 sys.clear()
-out gui.bold(gui.cyan("--- ИНИЦИАЛИЗАЦИЯ МАГМЫ ---"))
+out gui.bold(gui.gold("--- ЗАПУСК TITAN ENGINE ---"))
 
-# 1. Математический модуль
-let radius = 12
-let area = math.pi * math.pow(radius, 2)
-out "Площадь круга (R=12): " + val.str(area)
-out "Корень из 144: " + val.str(math.root(144))
+# Математика
+let res = math.root(144) + math.pow(2, 3)
+out "Math (12+8): " + val.str(res)
 
-# 2. Системный модуль
-out "ОС: " + sys.os + " (" + sys.arch + ")"
-out "Аптайм: " + val.str(sys.uptime()) + " сек"
+# Система
+out "Версия: " + sys.ver
+out "Аптайм: " + val.str(sys.uptime()) + "s"
 
-# 3. Модуль безопасности
-let my_hash = crypto.sha256("lava_secret")
-out "SHA256: " + my_hash
+# Криптография
+let s = crypto.sha256("lava")
+out "SHA256: " + s
 
-# 4. Модуль Android (Termux)
-let battery = termux.battery()
-out "Заряд: " + val.str(battery["percentage"]) + "% [" + battery["status"] + "]"
+# Termux
+let b = termux.battery()
+out "Заряд: " + val.str(b["percentage"]) + "%"
 
-# 5. Сетевой тест
-out "Запрос внешнего IP..."
-let ip = net.get("https://api.ipify.org")
-out "Твой IP: " + ip
+# Обработка текста
+let tx = val.upper("lava script")
+out "Текст: " + tx
 
-# 6. Работа со строками
-let raw_text = "   Lava is Hot   "
-let clean_text = val.lower(val.replace(raw_text, " ", ""))
-out "Обработка текста: " + clean_text
-
-out gui.bold(gui.green("--- ВСЕ СИСТЕМЫ В НОРМЕ ---"))
+out gui.bold(gui.green("--- ТЕСТ ЗАВЕРШЕН УСПЕШНО ---"))
