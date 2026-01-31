@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-    <mime-type type="text/x-lavascript">
-        <comment>LavaScript Source</comment>
-        <glob pattern="*.ls"/>
-    </mime-type>
-</mime-info>
+<language id="ls" name="LavaScript">
+    <keywords>let, out, if, else, for, while</keywords>
+    <comments>#</comments>
+    <string>"</string>
+</language>

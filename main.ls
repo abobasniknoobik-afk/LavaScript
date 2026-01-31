@@ -1,20 +1,10 @@
-# 🌋 LavaScript v0.2 - Magma Edition
-sys.clear()
-out gui.bold(gui.gold("=== ПРИВЕТ ИЗ LAVASCRIPT ==="))
+# Подключаем библиотеки (имитация импорта через чтение файлов)
+out gui.gold("--- ЗАПУСК MAIN ---")
 
-# Проверка системных данных
-let my_os = sys.platform
-let battery = termux.battery()
-out "Система: " + my_os
-out "Заряд АКБ: " + val.str(battery["percentage"]) + "%"
+let my_ip = net.ip()
+out "Мой IP: " + my_ip
 
-# Магия вычислений
-let r = 12
-let s = math.pi * math.pow(r, 2)
-out "Площадь круга с радиусом 12: " + val.str(s)
+let b = termux.battery()
+out "Заряд: " + val.str(val.get(b, "percentage", 0)) + "%"
 
-# Работа с текстом
-let msg = "lava is hot"
-out gui.green(val.upper(msg))
-
-termux.toast("LavaScript v0.2 успешно запущен!")
+out gui.green("--- СИСТЕМА OK ---")
