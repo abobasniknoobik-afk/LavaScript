@@ -1,17 +1,16 @@
-# === ИСПРАВЛЕННЫЙ ГЛОБАЛЬНЫЙ ТЕСТ ===
-sys.clear()
-out gui.bold(gui.gold("--- ПЕРЕЗАПУСК ТЕСТА v0.2.1 ---"))
+# ТЕСТ v0.2.3
+out gui["bold"](gui["green"]("--- ЗАПУСК НОВОГО ТЕСТА ---"))
 
-# Тест корня (теперь через .root)
-let r = math.root(144)
-out "Корень из 144: " + val.str(r)
+# Проверка математики
+let koren = math["root"](144)
+out "Корень: " + val["str"](koren)
 
-# Тест батареи (теперь безопасно)
-let bat = termux.battery()
-out "Заряд: " + val.str(bat["percentage"]) + "%"
+# Проверка FS
+let mesto = fs["cwd"]()
+out "Папка: " + mesto
 
-# Тест пути
-let my_dir = fs.cwd()
-out "Текущая папка: " + my_dir
+# Проверка Батареи
+let bp = termux["battery"]()
+out "Заряд: " + val["str"](bp["percentage"])
 
-out gui.green("--- ТЕПЕРЬ ВСЁ ЧИСТО! ---")
+out "--- ФИНИШ ---"
