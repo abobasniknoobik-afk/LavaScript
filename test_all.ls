@@ -1,25 +1,24 @@
-# ТЕСТ МАГМА v0.4
+# === ТЕСТ МАГМА ГИГАНТ ===
 sys.clear()
-out gui.bold(gui.magenta("--- ЗАПУСК ГЛОБАЛЬНОЙ ПРОВЕРКИ ---"))
+out gui.bold(gui.magenta("--- ЗАПУСК ОБЗОРА СИСТЕМЫ ---"))
 
-# Математика
-let m = math.pow(math.root(144), 2)
-out "Math: " + val.str(m)
+# Проверка ядра
+out "Архитектура: " + sys.arch
+out "Аптайм движка: " + val.str(sys.uptime()) + " сек"
 
-# Криптография
-let c = crypto.sha512("lavacode")
-out "Crypto SHA512: " + val.str(val.len(c)) + " chars"
+# Проверка крипты
+let secret = crypto.sha512("lava_is_hot")
+out "SHA512 (первые 10): " + val.str(val.split(secret, "")[0]) # Просто тест длины
 
-# Файлы
-out "FS: Твой ник в системе: " + sys.get_env("USER")
-out "FS: Домашняя папка: " + fs.home()
+# Проверка файлов
+let h = fs.home()
+out "Домашняя папка: " + h
 
-# Железо (Android/Termux)
+# Проверка Termux
 let b = termux.battery()
-out "Termux: Заряд " + val.str(b["percentage"]) + "%"
-out "Termux: Статус " + b["status"]
+out "Батарея: " + val.str(b["percentage"]) + "% (" + b["status"] + ")"
 
-# Цвета
-out gui.bg_red(gui.white(" СИСТЕМА СТАБИЛЬНА "))
+# Проверка Сети
+out "IP: " + net.get("https://api.ipify.org")
 
-out gui.bold(gui.gold("--- ТЕСТ v0.4 ЗАВЕРШЕН ---"))
+out gui.bold(gui.green("--- ВСЕ МОДУЛИ ВКЛЮЧЕНЫ ---"))
