@@ -7,59 +7,51 @@ class Module:
 
 class LavaScript:
     def __init__(self):
-        self.version = "v0.2.5_SOLID"
+        self.version = "v0.2.6_CRYSTAL"
         self.scope = {}
 
-        # Безопасный вызов Termux
-        def run_tm(cmd_list):
+        def run_tm(cmd):
             try:
-                p = subprocess.run(cmd_list, capture_output=True, timeout=2)
-                return p.stdout.decode().strip()
-            except: return ""
+                res = subprocess.run(cmd, capture_output=True, timeout=1).stdout.decode().strip()
+                return json.loads(res) if res.startswith("{") else {}
+            except: return {}
 
-        # Безопасная батарея
-        def get_bat():
-            raw = run_tm(["termux-battery-status"])
-            try:
-                data = json.loads(raw) if raw.startswith("{") else {}
-                return {"percentage": data.get("percentage", 0), "status": data.get("status", "N/A")}
-            except: return {"percentage": 0, "status": "Error"}
+        # Математика (root теперь работает всегда)
+        m_dict = {n: getattr(math, n) for n in dir(math) if not n.startswith("_")}
+        m_dict["root"] = math.sqrt
 
-        # Инициализация модулей как объектов классов
+        # Файлы
+        fs_dict = {
+            "path": os.path.abspath, "cwd": os.getcwd(),
+            "ls": os.listdir, "exists": os.path.exists,
+            "read": lambda p: open(p, 'r').read()
+        }
+
+        # Окружение
         self.env = {
-            "math": Module(
-                pi=math.pi, sqrt=math.sqrt, root=math.sqrt, sin=math.sin
-            ),
-            "fs": Module(
-                cwd=os.getcwd, path=os.path.abspath, ls=os.listdir,
-                exists=os.path.exists, read=lambda p: open(p, 'r').read()
-            ),
-            "val": Module(
-                str=str, int=int, type=lambda x: type(x).__name__,
-                upper=lambda t: str(t).upper(), lower=lambda t: str(t).lower()
-            ),
+            "math": Module(**m_dict),
+            "fs": Module(**fs_dict),
+            "val": Module(str=str, type=lambda x: type(x).__name__, int=int),
             "sys": Module(
+                platform=sys.platform, 
                 clear=lambda: os.system('clear' if os.name != 'nt' else 'cls'),
-                exit=sys.exit, platform=sys.platform, date=lambda: time.ctime()
+                date=lambda: time.ctime(), exit=sys.exit
             ),
             "gui": Module(
-                gold=lambda t: f"\x1b[33m{t}\x1b[0m", red=lambda t: f"\x1b[31m{t}\x1b[0m",
-                green=lambda t: f"\x1b[32m{t}\x1b[0m", bold=lambda t: f"\x1b[1m{t}\x1b[0m"
+                gold=lambda t: f"\x1b[33m{t}\x1b[0m", 
+                green=lambda t: f"\x1b[32m{t}\x1b[0m",
+                bold=lambda t: f"\x1b[1m{t}\x1b[0m"
             ),
             "termux": Module(
-                battery=get_bat,
-                vibrate=lambda d=200: run_tm(["termux-vibrate", "-d", str(d)]),
-                toast=lambda m: run_tm(["termux-toast", str(m)])
+                battery=lambda: run_tm(["termux-battery-status"]) or {"percentage": 0, "status": "N/A"},
+                toast=lambda m: subprocess.run(["termux-toast", str(m)])
             ),
-            "net": Module(
-                get=lambda url: urllib.request.urlopen(url).read().decode()
-            )
+            "net": Module(get=lambda url: urllib.request.urlopen(url).read().decode())
         }
 
     def execute(self, line):
         line = line.strip()
         if not line or line.startswith("#"): return
-        # Теперь eval точно увидит атрибуты классов через точку
         ctx = {**self.env, **self.scope}
         try:
             if line.startswith("let "):
@@ -81,9 +73,8 @@ class LavaScript:
         while True:
             try:
                 line = input("LS> ")
-                if line.lower() in ["exit", "quit"]: break
                 self.execute(line)
-            except (KeyboardInterrupt, EOFError): break
+            except: break
 
 if __name__ == "__main__":
     engine = LavaScript()

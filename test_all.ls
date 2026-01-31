@@ -1,23 +1,25 @@
-# === LAVASCRIPT SOLID TEST v0.2.5 ===
+# ТЕСТ ДЛЯ v0.2.6
 sys.clear()
-out gui.bold(gui.gold("--- КРИСТАЛЬНЫЙ ТЕСТ ---"))
+out gui.bold(gui.green("--- ЗАПУСК ИДЕАЛЬНОГО ТЕСТА ---"))
 
-# 1. Math (Проверка root)
-let r = math.root(144)
-out "Root test: " + val.str(r)
+# 1. Тест математики
+let k = math.root(144)
+out "Математика (root): " + val.str(k)
 
-# 2. FS (Проверка path)
-let my_path = fs.path(".")
-out "Path test: " + my_path
+# 2. Тест системы
+out "ОС: " + sys.platform
+out "Дата: " + sys.date()
 
-# 3. Termux Battery (ЗАМЕТЬ СКОБКИ: battery()["percentage"])
-let bat = termux.battery()
-let perc = bat["percentage"]
-out "Battery: " + val.str(perc) + "%"
+# 3. Тест путей
+let p = fs.path(".")
+out "Путь: " + p
 
-# 4. Net
-out "Net test (IP)..."
-let ip = net.get("https://api.ipify.org")
-out "IP: " + ip
+# 4. Тест батареи (С ЗАЩИТОЙ)
+let b = termux.battery()
+let proc = b["percentage"]
+out "Заряд: " + val.str(proc) + "%"
 
-out gui.green("--- ТЕСТ ПРОЙДЕН ---")
+# 5. Тест сети
+out "Твой IP: " + net.get("https://api.ipify.org")
+
+out gui.bold(gui.gold("--- ТЕСТ ЗАВЕРШЕН БЕЗ ОШИБОК ---"))
