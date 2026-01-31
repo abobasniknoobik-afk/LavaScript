@@ -1,5 +1,8 @@
-cat << 'EOF' > stdlib.ls
-# Стандартная библиотека LavaScript
-let version = "v1_TEST"
-out "Библиотека загружена. Статус: " + version
-EOF
+# LavaScript Standard Library (stdlib)
+let PI = math.pi
+let E = math.e
+let VERSION = "0.2_MAGMA"
+
+# Сокращения для удобства
+let info = sys.platform
+let date = sys.date
