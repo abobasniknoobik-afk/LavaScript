@@ -4,73 +4,55 @@ from types import SimpleNamespace
 
 class LavaScript:
     def __init__(self):
-        self.version = "v0.2.1_MAGMA"
+        self.version = "v0.2.2_MAGMA"
         self.scope = {}
 
-        # Вспомогательная функция для команд Termux
+        # Безопасный запуск команд оболочки
         def run_tm(cmd_list):
             try:
                 res = subprocess.run(cmd_list, capture_output=True).stdout.decode().strip()
                 return res if res else ""
             except: return ""
 
-        # Безопасное получение данных батареи
+        # Фикс ошибки NoneType для батареи
         def get_bat():
             res = run_tm(["termux-battery-status"])
             try:
-                return json.loads(res) if res else {"percentage": 0, "status": "N/A"}
+                data = json.loads(res) if res else {}
+                return {
+                    "percentage": data.get("percentage", 0),
+                    "status": data.get("status", "Unknown"),
+                    "health": data.get("health", "Good")
+                }
             except:
                 return {"percentage": 0, "status": "Error"}
 
-        # --- СБОРКА МОДУЛЕЙ ---
+        # --- СИСТЕМА МОДУЛЕЙ ---
         
-        # 1. MATH (Добавлен root для теста)
+        # 1. MATH (Добавлен .root)
         m_dict = {n: getattr(math, n) for n in dir(math) if not n.startswith("_")}
         m_dict["root"] = math.sqrt 
 
-        # 2. VAL & TYPES
-        v_dict = {
-            "str": str, "int": int, "dec": float, "bool": bool, "len": len,
-            "lower": lambda t: str(t).lower(), "upper": lambda t: str(t).upper(),
-            "type": lambda x: type(x).__name__, "hex": hex, "bin": bin,
-            "split": lambda t, s=" ": str(t).split(s), "join": lambda l, s="": s.join(l)
-        }
-
-        # 3. FS (Исправлен path)
+        # 2. FS (Добавлен .path)
         fs_dict = {
             "read": lambda p: open(p, 'r').read(),
             "write": lambda p, d: open(p, 'w').write(d),
             "exists": os.path.exists, "remove": os.remove, "ls": os.listdir,
-            "cwd": os.getcwd, "mkdir": os.mkdir, "size": os.path.getsize,
-            "path": os.path.abspath, "copy": shutil.copy, "move": shutil.move
+            "cwd": os.getcwd, "path": os.path.abspath, "size": os.path.getsize
         }
 
-        # 4. SYS & TIME
+        # 3. VAL & TYPES
+        v_dict = {
+            "str": str, "int": int, "dec": float, "bool": bool,
+            "type": lambda x: type(x).__name__, "len": len,
+            "upper": lambda t: str(t).upper(), "lower": lambda t: str(t).lower()
+        }
+
+        # 4. SYS & GUI
         sys_dict = {
-            "exit": sys.exit, "sleep": time.sleep, "clear": lambda: os.system('clear' if os.name != 'nt' else 'cls'),
-            "platform": sys.platform, "now": lambda: time.ctime(),
+            "exit": sys.exit, "sleep": time.sleep, "platform": sys.platform,
+            "clear": lambda: os.system('clear' if os.name != 'nt' else 'cls'),
             "date": lambda: datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-
-        # 5. NET & CRYPTO
-        net_dict = {
-            "get": lambda url: urllib.request.urlopen(url, timeout=5).read().decode('utf-8'),
-            "ping": lambda h: os.system(f"ping -c 1 {h} > /dev/null" if os.name != 'nt' else f"ping -n 1 {h} > nul") == 0
-        }
-        cr_dict = {
-            "sha256": lambda t: hashlib.sha256(str(t).encode()).hexdigest(),
-            "md5": lambda t: hashlib.md5(str(t).encode()).hexdigest(),
-            "b64en": lambda t: base64.b64encode(str(t).encode()).decode(),
-            "b64de": lambda t: base64.b64decode(str(t)).decode()
-        }
-
-        # 6. TERMUX & GUI
-        tm_dict = {
-            "toast": lambda m: run_tm(["termux-toast", str(m)]),
-            "vibrate": lambda d=200: run_tm(["termux-vibrate", "-d", str(d)]),
-            "battery": get_bat,
-            "speak": lambda t: run_tm(["termux-tts-speak", str(t)]),
-            "clipboard": lambda t=None: run_tm(["termux-clipboard-set", t]) if t else run_tm(["termux-clipboard-get"])
         }
         gui_dict = {
             "gold": lambda t: f"\x1b[33m{t}\x1b[0m", "red": lambda t: f"\x1b[31m{t}\x1b[0m",
@@ -78,13 +60,12 @@ class LavaScript:
             "bold": lambda t: f"\x1b[1m{t}\x1b[0m"
         }
 
-        # Регистрация всех модулей
         self.env = {
-            "math": SimpleNamespace(**m_dict), "val": SimpleNamespace(**v_dict),
-            "fs": SimpleNamespace(**fs_dict), "sys": SimpleNamespace(**sys_dict),
-            "net": SimpleNamespace(**net_dict), "crypto": SimpleNamespace(**cr_dict),
-            "termux": SimpleNamespace(**tm_dict), "gui": SimpleNamespace(**gui_dict),
-            "rand": SimpleNamespace(num=random.randint, pick=random.choice)
+            "math": SimpleNamespace(**m_dict), "fs": SimpleNamespace(**fs_dict),
+            "val": SimpleNamespace(**v_dict), "sys": SimpleNamespace(**sys_dict),
+            "gui": SimpleNamespace(**gui_dict), "termux": SimpleNamespace(battery=get_bat),
+            "net": SimpleNamespace(get=lambda url: urllib.request.urlopen(url).read().decode()),
+            "crypto": SimpleNamespace(sha256=lambda t: hashlib.sha256(str(t).encode()).hexdigest())
         }
 
     def execute(self, line):
