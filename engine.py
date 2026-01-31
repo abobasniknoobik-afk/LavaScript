@@ -7,25 +7,28 @@ class LavaScript:
         self.version = "v0.2.1_MAGMA"
         self.scope = {}
 
-        # --- ВНУТРЕННИЕ УТИЛИТЫ ---
+        # Вспомогательная функция для команд Termux
         def run_tm(cmd_list):
             try:
                 res = subprocess.run(cmd_list, capture_output=True).stdout.decode().strip()
                 return res if res else ""
             except: return ""
 
+        # Безопасное получение данных батареи
         def get_bat():
             res = run_tm(["termux-battery-status"])
-            try: return json.loads(res) if res else {"percentage": 0, "status": "N/A"}
-            except: return {"percentage": 0, "status": "Error"}
+            try:
+                return json.loads(res) if res else {"percentage": 0, "status": "N/A"}
+            except:
+                return {"percentage": 0, "status": "Error"}
 
         # --- СБОРКА МОДУЛЕЙ ---
         
-        # 1. MATH (Добавлен .root для совместимости)
+        # 1. MATH (Добавлен root для теста)
         m_dict = {n: getattr(math, n) for n in dir(math) if not n.startswith("_")}
         m_dict["root"] = math.sqrt 
 
-        # 2. VAL & TYPES (Обработка данных)
+        # 2. VAL & TYPES
         v_dict = {
             "str": str, "int": int, "dec": float, "bool": bool, "len": len,
             "lower": lambda t: str(t).lower(), "upper": lambda t: str(t).upper(),
@@ -33,7 +36,7 @@ class LavaScript:
             "split": lambda t, s=" ": str(t).split(s), "join": lambda l, s="": s.join(l)
         }
 
-        # 3. FS (Файловая система + Исправленный .path)
+        # 3. FS (Исправлен path)
         fs_dict = {
             "read": lambda p: open(p, 'r').read(),
             "write": lambda p, d: open(p, 'w').write(d),
@@ -57,7 +60,8 @@ class LavaScript:
         cr_dict = {
             "sha256": lambda t: hashlib.sha256(str(t).encode()).hexdigest(),
             "md5": lambda t: hashlib.md5(str(t).encode()).hexdigest(),
-            "b64en": lambda t: base64.b64encode(str(t).encode()).decode()
+            "b64en": lambda t: base64.b64encode(str(t).encode()).decode(),
+            "b64de": lambda t: base64.b64decode(str(t)).decode()
         }
 
         # 6. TERMUX & GUI
@@ -74,7 +78,7 @@ class LavaScript:
             "bold": lambda t: f"\x1b[1m{t}\x1b[0m"
         }
 
-        # Глобальное окружение
+        # Регистрация всех модулей
         self.env = {
             "math": SimpleNamespace(**m_dict), "val": SimpleNamespace(**v_dict),
             "fs": SimpleNamespace(**fs_dict), "sys": SimpleNamespace(**sys_dict),
