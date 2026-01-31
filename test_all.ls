@@ -1,24 +1,33 @@
-# === ТЕСТ МАГМА ГИГАНТ ===
+# === ТЕСТ ГИГАНТСКОГО ДВИЖКА v0.4.5 ===
 sys.clear()
-out gui.bold(gui.magenta("--- ЗАПУСК ОБЗОРА СИСТЕМЫ ---"))
+out gui.bold(gui.cyan("--- ИНИЦИАЛИЗАЦИЯ МАГМЫ ---"))
 
-# Проверка ядра
-out "Архитектура: " + sys.arch
-out "Аптайм движка: " + val.str(sys.uptime()) + " сек"
+# 1. Математический модуль
+let radius = 12
+let area = math.pi * math.pow(radius, 2)
+out "Площадь круга (R=12): " + val.str(area)
+out "Корень из 144: " + val.str(math.root(144))
 
-# Проверка крипты
-let secret = crypto.sha512("lava_is_hot")
-out "SHA512 (первые 10): " + val.str(val.split(secret, "")[0]) # Просто тест длины
+# 2. Системный модуль
+out "ОС: " + sys.os + " (" + sys.arch + ")"
+out "Аптайм: " + val.str(sys.uptime()) + " сек"
 
-# Проверка файлов
-let h = fs.home()
-out "Домашняя папка: " + h
+# 3. Модуль безопасности
+let my_hash = crypto.sha256("lava_secret")
+out "SHA256: " + my_hash
 
-# Проверка Termux
-let b = termux.battery()
-out "Батарея: " + val.str(b["percentage"]) + "% (" + b["status"] + ")"
+# 4. Модуль Android (Termux)
+let battery = termux.battery()
+out "Заряд: " + val.str(battery["percentage"]) + "% [" + battery["status"] + "]"
 
-# Проверка Сети
-out "IP: " + net.get("https://api.ipify.org")
+# 5. Сетевой тест
+out "Запрос внешнего IP..."
+let ip = net.get("https://api.ipify.org")
+out "Твой IP: " + ip
 
-out gui.bold(gui.green("--- ВСЕ МОДУЛИ ВКЛЮЧЕНЫ ---"))
+# 6. Работа со строками
+let raw_text = "   Lava is Hot   "
+let clean_text = val.lower(val.replace(raw_text, " ", ""))
+out "Обработка текста: " + clean_text
+
+out gui.bold(gui.green("--- ВСЕ СИСТЕМЫ В НОРМЕ ---"))
