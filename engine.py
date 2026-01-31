@@ -3,121 +3,131 @@
 import sys, os, re, math, time, subprocess, random, urllib.request
 import hashlib, json, base64, shutil, datetime, platform, binascii
 
+# Класс-контейнер для методов модуля
 class Lib:
-    def __init__(self, **kwargs):
+    def __init__(self, name, **kwargs):
+        self.__name = name
         self.__dict__.update(kwargs)
+    def __repr__(self):
+        return f"<LavaModule '{self.__name}'>"
 
 class LavaScript:
     def __init__(self):
-        self.version = "v0.4_MAGMA_OVERLOAD"
+        self.version = "v0.4.1_MAGMA_GIANT"
         self.scope = {}
         self.start_time = time.time()
-        self.history = []
 
-        # --- ВНУТРЕННИЕ СИСТЕМНЫЕ ВЫЗОВЫ ---
-        def run_command(args):
+        # --- ВНУТРЕННИЕ УТИЛИТЫ ---
+        def run_tm(args):
             try:
-                proc = subprocess.run(args, capture_output=True, text=True, timeout=5)
-                return proc.stdout.strip() if proc.stdout else ""
+                p = subprocess.run(args, capture_output=True, text=True, timeout=3)
+                return p.stdout.strip() if p.stdout else ""
             except: return ""
 
-        def safe_json(raw):
-            try: return json.loads(raw) if raw else {}
+        def get_json(cmd):
+            raw = run_tm(cmd)
+            try: return json.loads(raw) if raw.startswith(("{","[")) else {}
             except: return {}
 
-        # --- МОДУЛЬ: MATH (МАТЕМАТИКА+) ---
-        math_lib = Lib(
+        # --- МОДУЛЬ: MATH (МАТЕМАТИКА) ---
+        self.math = Lib("math",
             pi=math.pi, e=math.e, tau=math.tau,
-            sqrt=math.sqrt, root=math.sqrt, 
-            sin=math.sin, cos=math.cos, tan=math.tan,
-            asin=math.asin, acos=math.acos, atan=math.atan,
+            sqrt=math.sqrt, root=math.sqrt,
+            pow=math.pow, abs=abs, mod=lambda x,y: x%y,
             ceil=math.ceil, floor=math.floor, round=round,
-            log=math.log, log10=math.log10, exp=math.exp,
-            pow=math.pow, abs=abs, mod=lambda x, y: x % y,
+            sin=math.sin, cos=math.cos, tan=math.tan,
+            log=math.log, log10=math.log10,
             fact=math.factorial, deg=math.degrees, rad=math.radians,
-            hypot=math.hypot, gcd=math.gcd, is_nan=math.isnan
+            is_nan=math.isnan, hypot=math.hypot, gcd=math.gcd
         )
 
-        # --- МОДУЛЬ: FS (ФАЙЛОВЫЙ КОМБАЙН) ---
-        fs_lib = Lib(
-            cwd=os.getcwd, path=os.path.abspath, 
+        # --- МОДУЛЬ: FS (ФАЙЛОВАЯ СИСТЕМА) ---
+        self.fs = Lib("fs",
+            cwd=os.getcwd, path=os.path.abspath,
             ls=os.listdir, exists=os.path.exists,
             is_file=os.path.isfile, is_dir=os.path.isdir,
-            mkdir=os.makedirs, rm=os.remove, rmdir=shutil.rmtree,
-            size=os.path.getsize, ctime=os.path.getctime,
+            size=os.path.getsize, home=lambda: os.path.expanduser("~"),
             read=lambda p: open(p, 'r', encoding='utf-8').read(),
             write=lambda p, d: open(p, 'w', encoding='utf-8').write(str(d)),
             append=lambda p, d: open(p, 'a', encoding='utf-8').write(str(d)),
-            copy=shutil.copy, move=shutil.move,
-            rename=os.rename, home=lambda: os.path.expanduser("~")
+            mkdir=lambda p: os.makedirs(p, exist_ok=True),
+            rm=os.remove, rmdir=shutil.rmtree,
+            copy=shutil.copy, move=shutil.move, rename=os.rename
         )
 
-        # --- МОДУЛЬ: SYS (ЯДРО СИСТЕМЫ) ---
-        sys_lib = Lib(
-            platform=sys.platform, os=platform.system(),
-            arch=platform.machine(), node=platform.node(),
-            ver=self.version, exit=sys.exit,
-            sleep=time.sleep, clear=lambda: os.system('clear' if os.name != 'nt' else 'cls'),
+        # --- МОДУЛЬ: SYS (СИСТЕМА) ---
+        self.sys = Lib("sys",
+            ver=self.version, platform=sys.platform,
+            os=platform.system(), arch=platform.machine(),
+            clear=lambda: os.system('clear' if os.name != 'nt' else 'cls'),
+            sleep=time.sleep, exit=sys.exit,
             date=lambda: datetime.datetime.now().strftime("%Y-%m-%d"),
             time=lambda: datetime.datetime.now().strftime("%H:%M:%S"),
-            ts=time.time, uptime=lambda: time.time() - self.start_time,
-            get_env=lambda k: os.getenv(k), set_env=lambda k, v: os.environ.update({k: v}),
-            shell=lambda c: subprocess.run(c, shell=True, capture_output=True, text=True).stdout
+            full_date=lambda: datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            uptime=lambda: round(time.time() - self.start_time, 2),
+            get_env=os.getenv, shell=lambda c: run_tm(c.split())
         )
 
-        # --- МОДУЛЬ: CRYPTO (БЕЗОПАСНОСТЬ) ---
-        crypto_lib = Lib(
+        # --- МОДУЛЬ: CRYPTO (КРИПТОГРАФИЯ) ---
+        self.crypto = Lib("crypto",
             md5=lambda t: hashlib.md5(str(t).encode()).hexdigest(),
             sha1=lambda t: hashlib.sha1(str(t).encode()).hexdigest(),
             sha256=lambda t: hashlib.sha256(str(t).encode()).hexdigest(),
             sha512=lambda t: hashlib.sha512(str(t).encode()).hexdigest(),
             b64e=lambda t: base64.b64encode(str(t).encode()).decode(),
             b64d=lambda t: base64.b64decode(str(t)).decode(),
-            crc32=lambda t: format(binascii.crc32(str(t).encode()) & 0xFFFFFFFF, '08x'),
-            hex_e=lambda t: binascii.hexlify(str(t).encode()).decode(),
-            hex_d=lambda t: binascii.unhexlify(str(t)).decode()
+            crc32=lambda t: hex(binascii.crc32(str(t).encode()) & 0xffffffff)
         )
 
         # --- МОДУЛЬ: TERMUX (ANDROID API) ---
-        tm_lib = Lib(
-            battery=lambda: safe_json(run_command(["termux-battery-status"])),
-            vibrate=lambda d=200: run_command(["termux-vibrate", "-d", str(d)]),
-            toast=lambda m: run_command(["termux-toast", str(m)]),
-            speak=lambda t: run_command(["termux-tts-speak", str(t)]),
-            brightness=lambda v: run_command(["termux-brightness", str(v)]),
-            volume=lambda s, v: run_command(["termux-volume", str(s), str(v)]),
-            torch=lambda s: run_command(["termux-torch", "on" if s else "off"]),
-            clip_get=lambda: run_command(["termux-clipboard-get"]),
-            clip_set=lambda t: run_command(["termux-clipboard-set", str(t)]),
-            wifi=lambda: safe_json(run_command(["termux-wifi-connectioninfo"])),
-            contact=lambda: safe_json(run_command(["termux-contact-list"]))
+        self.termux = Lib("termux",
+            battery=lambda: get_json(["termux-battery-status"]),
+            toast=lambda m: subprocess.run(["termux-toast", str(m)]),
+            vibrate=lambda d=200: subprocess.run(["termux-vibrate", "-d", str(d)]),
+            torch=lambda s: subprocess.run(["termux-torch", "on" if s else "off"]),
+            speak=lambda t: subprocess.run(["termux-tts-speak", str(t)]),
+            clip_get=lambda: run_tm(["termux-clipboard-get"]),
+            clip_set=lambda t: subprocess.run(["termux-clipboard-set", str(t)])
         )
 
-        # --- МОДУЛЬ: GUI (ОФОРМЛЕНИЕ) ---
-        gui_lib = Lib(
-            red=lambda t: f"\x1b[31m{t}\x1b[0m", green=lambda t: f"\x1b[32m{t}\x1b[0m",
-            blue=lambda t: f"\x1b[34m{t}\x1b[0m", gold=lambda t: f"\x1b[33m{t}\x1b[0m",
-            cyan=lambda t: f"\x1b[36m{t}\x1b[0m", bold=lambda t: f"\x1b[1m{t}\x1b[0m",
-            magenta=lambda t: f"\x1b[35m{t}\x1b[0m", black=lambda t: f"\x1b[30m{t}\x1b[0m",
-            white=lambda t: f"\x1b[37m{t}\x1b[0m", bg_red=lambda t: f"\x1b[41m{t}\x1b[0m",
-            reset="\x1b[0m"
+        # --- МОДУЛЬ: GUI (ЦВЕТА) ---
+        self.gui = Lib("gui",
+            gold=lambda t: f"\x1b[33m{t}\x1b[0m", 
+            red=lambda t: f"\x1b[31m{t}\x1b[0m",
+            green=lambda t: f"\x1b[32m{t}\x1b[0m", 
+            blue=lambda t: f"\x1b[34m{t}\x1b[0m",
+            cyan=lambda t: f"\x1b[36m{t}\x1b[0m", 
+            magenta=lambda t: f"\x1b[35m{t}\x1b[0m",
+            bold=lambda t: f"\x1b[1m{t}\x1b[0m",
+            bg_red=lambda t: f"\x1b[41m{t}\x1b[0m"
         )
 
-        # --- МОДУЛЬ: VAL (ТИПЫ И ДАННЫЕ) ---
-        val_lib = Lib(
-            str=str, int=int, float=float, bool=bool, 
-            type=lambda x: type(x).__name__, len=len,
-            json_p=json.loads, json_b=json.dumps,
+        # --- МОДУЛЬ: NET (СЕТЬ) ---
+        def net_get(url):
+            try: return urllib.request.urlopen(url, timeout=5).read().decode()
+            except: return "NetError"
+
+        self.net = Lib("net",
+            get=net_get,
+            ping=lambda h: os.system(f"ping -c 1 {h} > /dev/null") == 0
+        )
+
+        # --- МОДУЛЬ: VAL (ДАННЫЕ) ---
+        self.val = Lib("val",
+            str=str, int=int, float=float, len=len,
+            type=lambda x: type(x).__name__,
             upper=lambda t: str(t).upper(), lower=lambda t: str(t).lower(),
-            split=lambda t, s=" ": str(t).split(s), join=lambda l, s="": s.join(l),
-            replace=lambda t, o, n: str(t).replace(o, n),
-            trim=lambda t: str(t).strip()
+            json_p=json.loads, json_b=json.dumps,
+            split=lambda t, s=" ": str(t).split(s),
+            join=lambda l, s="": s.join(l)
         )
 
+        # Глобальное окружение для Eval
         self.env = {
-            "math": math_lib, "fs": fs_lib, "sys": sys_lib,
-            "crypto": crypto_lib, "termux": tm_lib, "gui": gui_lib,
-            "val": val_lib, "rand": Lib(num=random.randint, choice=random.choice)
+            "math": self.math, "fs": self.fs, "sys": self.sys,
+            "crypto": self.crypto, "termux": self.termux,
+            "gui": self.gui, "net": self.net, "val": self.val,
+            "rand": Lib("rand", num=random.randint, choice=random.choice)
         }
 
     def execute(self, line):
@@ -140,18 +150,18 @@ class LavaScript:
             print(f"\x1b[31m[LS_ERROR]\x1b[0m {e}")
 
     def repl(self):
-        os.system('clear' if os.name != 'nt' else 'cls')
-        print(f"\x1b[1;33m🌋 LavaScript {self.version}\x1b[0m")
+        self.sys.clear()
+        print(f"🌋 LavaScript {self.version} (Magma Giant)")
         while True:
             try:
                 line = input("\x1b[38;5;226mLS>\x1b[0m ")
-                if line.lower() in ["exit", "quit", "sys.exit()"]: break
+                if line.lower() in ["exit", "quit"]: break
                 self.execute(line)
             except: break
 
 if __name__ == "__main__":
-    ls = LavaScript()
+    engine = LavaScript()
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r', encoding='utf-8') as f:
-            for l in f: ls.execute(l)
-    else: ls.repl()
+            for l in f: engine.execute(l)
+    else: engine.repl()
